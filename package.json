@@ -1,0 +1,22 @@
+{
+  "name": "nsc-erms",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Northern Samar Colleges — Employee Records Management System",
+  "workspaces": [
+    "renderer",
+    "server"
+  ],
+  "scripts": {
+    "dev:client": "npm run dev -w renderer",
+    "dev:server": "npm run dev -w server",
+    "dev": "npm run dev:server",
+    "migrate": "npm run migrate -w server",
+    "seed": "npm run seed -w server",
+    "db:create": "npm run db:create -w server",
+    "db:setup": "npm run db:create && npm run migrate && npm run seed"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

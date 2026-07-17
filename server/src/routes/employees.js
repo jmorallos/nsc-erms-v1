@@ -1,0 +1,368 @@
+import { Router } from 'express';
+import { ulid } from 'ulid';
+import { query, withClient } from '../db/pool.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
+import { HttpError } from '../middleware/errors.js';
+
+export const employeesRouter = Router();
+
+const writeRoles = requireRole('staff', 'admin', 'superadmin');
+
+employeesRouter.use(requireAuth);
+
+const EMPLOYEE_LIST_SQL = `
+  SELECT
+    e.id,
+    e.employee_no,
+    e.first_name,
+    e.middle_name,
+    e.last_name,
+    e.name_extension,
+    e.email,
+    e.contact_number,
+    e.address,
+    e.profile_picture_path,
+    e.remarks,
+    ea.id AS assignment_id,
+    ea.start_date,
+    ea.end_date,
+    ea.is_primary,
+    ea.department_position_id,
+    d.id AS department_id,
+    d.name AS department_name,
+    p.id AS position_id,
+    p.name AS position_name,
+    et.id AS employment_type_id,
+    et.name AS employment_type_name,
+    es.id AS employment_status_id,
+    es.name AS employment_status_name
+  FROM employees e
+  LEFT JOIN employee_assignments ea
+    ON ea.employee_id = e.id
+   AND ea.is_primary = TRUE
+   AND ea.is_active = TRUE
+   AND ea.end_date IS NULL
+  LEFT JOIN department_positions dp ON dp.id = ea.department_position_id
+  LEFT JOIN departments d ON d.id = dp.department_id
+  LEFT JOIN positions p ON p.id = dp.position_id
+  LEFT JOIN employment_types et ON et.id = ea.employment_type_id
+  LEFT JOIN employment_statuses es ON es.id = ea.employment_status_id
+  WHERE e.deleted_at IS NULL
+    AND e.is_archived = FALSE
+`;
+
+function mapEmployee(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    employeeNo: row.employee_no,
+    firstName: row.first_name,
+    middleName: row.middle_name,
+    lastName: row.last_name,
+    nameExtension: row.name_extension,
+    email: row.email,
+    contactNumber: row.contact_number,
+    address: row.address,
+    profilePicturePath: row.profile_picture_path,
+    remarks: row.remarks,
+    assignment: row.assignment_id
+      ? {
+          id: row.assignment_id,
+          departmentPositionId: row.department_position_id,
+          departmentId: row.department_id,
+          departmentName: row.department_name,
+          positionId: row.position_id,
+          positionName: row.position_name,
+          employmentTypeId: row.employment_type_id,
+          employmentTypeName: row.employment_type_name,
+          employmentStatusId: row.employment_status_id,
+          employmentStatusName: row.employment_status_name,
+          startDate: row.start_date,
+          endDate: row.end_date,
+          isPrimary: row.is_primary,
+        }
+      : null,
+  };
+}
+
+async function nextEmployeeNo(client) {
+  const { rows } = await client.query(
+    `SELECT employee_no FROM employees
+     WHERE employee_no ~ '^[0-9]+$'
+     ORDER BY employee_no::bigint DESC
+     LIMIT 1`,
+  );
+  const last = rows[0]?.employee_no ? Number(rows[0].employee_no) : 100000;
+  return String(last + 1);
+}
+
+async function getEmployeeRow(id) {
+  const { rows } = await query(`${EMPLOYEE_LIST_SQL} AND e.id = $1`, [id]);
+  return rows[0] ?? null;
+}
+
+employeesRouter.get('/', async (req, res, next) => {
+  try {
+    const q = String(req.query.q || '').trim().toLowerCase();
+    const departmentId = String(req.query.departmentId || '').trim();
+    const statusId = String(req.query.statusId || '').trim();
+
+    const params = [];
+    let sql = EMPLOYEE_LIST_SQL;
+
+    if (q) {
+      params.push(`%${q}%`);
+      sql += ` AND (
+        lower(e.first_name) LIKE $${params.length}
+        OR lower(e.last_name) LIKE $${params.length}
+        OR lower(e.email) LIKE $${params.length}
+        OR lower(COALESCE(p.name, '')) LIKE $${params.length}
+        OR lower(COALESCE(d.name, '')) LIKE $${params.length}
+        OR lower(e.employee_no) LIKE $${params.length}
+      )`;
+    }
+    if (departmentId) {
+      params.push(departmentId);
+      sql += ` AND d.id = $${params.length}`;
+    }
+    if (statusId) {
+      params.push(statusId);
+      sql += ` AND es.id = $${params.length}`;
+    }
+
+    sql += ' ORDER BY e.last_name, e.first_name';
+
+    const { rows } = await query(sql, params);
+    res.json({ employees: rows.map(mapEmployee) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+employeesRouter.get('/:id', async (req, res, next) => {
+  try {
+    const row = await getEmployeeRow(req.params.id);
+    if (!row) throw new HttpError(404, 'Employee not found', 'NOT_FOUND');
+    res.json({ employee: mapEmployee(row) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+employeesRouter.post('/', writeRoles, async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    const firstName = String(body.firstName || '').trim();
+    const lastName = String(body.lastName || '').trim();
+    const email = String(body.email || '').trim();
+    const contactNumber = String(body.contactNumber || '').trim();
+    const address = String(body.address || '').trim();
+    const departmentPositionId = String(body.departmentPositionId || '').trim();
+    const employmentTypeId = String(body.employmentTypeId || '').trim();
+    const employmentStatusId = String(body.employmentStatusId || '').trim();
+    const startDate = String(body.startDate || '').trim();
+
+    if (!firstName || !lastName || !email) {
+      throw new HttpError(400, 'First name, last name, and email are required', 'VALIDATION');
+    }
+    if (!departmentPositionId || !employmentTypeId || !employmentStatusId || !startDate) {
+      throw new HttpError(
+        400,
+        'Department/position, employment type, status, and start date are required',
+        'VALIDATION',
+      );
+    }
+
+    const employee = await withClient(async (client) => {
+      await client.query('BEGIN');
+      try {
+        const empId = ulid();
+        const employeeNo = body.employeeNo
+          ? String(body.employeeNo).trim()
+          : await nextEmployeeNo(client);
+
+        await client.query(
+          `INSERT INTO employees (
+             id, employee_no, first_name, last_name, email, contact_number, address,
+             created_by, updated_by
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$8)`,
+          [
+            empId,
+            employeeNo,
+            firstName,
+            lastName,
+            email,
+            contactNumber,
+            address,
+            req.session.userId,
+          ],
+        );
+
+        const assignmentId = ulid();
+        await client.query(
+          `INSERT INTO employee_assignments (
+             id, employee_id, department_position_id, employment_type_id,
+             employment_status_id, start_date, is_active, is_primary
+           ) VALUES ($1,$2,$3,$4,$5,$6, TRUE, TRUE)`,
+          [
+            assignmentId,
+            empId,
+            departmentPositionId,
+            employmentTypeId,
+            employmentStatusId,
+            startDate,
+          ],
+        );
+
+        await client.query('COMMIT');
+        return empId;
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      }
+    });
+
+    const row = await getEmployeeRow(employee);
+    res.status(201).json({ employee: mapEmployee(row) });
+  } catch (err) {
+    if (err.code === '23505') {
+      return next(new HttpError(409, 'Employee number already exists', 'CONFLICT'));
+    }
+    if (err.code === '23503') {
+      return next(new HttpError(400, 'Invalid department, position, type, or status', 'VALIDATION'));
+    }
+    next(err);
+  }
+});
+
+employeesRouter.patch('/:id', writeRoles, async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    const firstName = String(body.firstName || '').trim();
+    const lastName = String(body.lastName || '').trim();
+    const email = String(body.email || '').trim();
+    const contactNumber = String(body.contactNumber || '').trim();
+    const address = String(body.address || '').trim();
+    const departmentPositionId = String(body.departmentPositionId || '').trim();
+    const employmentTypeId = String(body.employmentTypeId || '').trim();
+    const employmentStatusId = String(body.employmentStatusId || '').trim();
+    const startDate = String(body.startDate || '').trim();
+
+    if (!firstName || !lastName || !email) {
+      throw new HttpError(400, 'First name, last name, and email are required', 'VALIDATION');
+    }
+    if (!departmentPositionId || !employmentTypeId || !employmentStatusId || !startDate) {
+      throw new HttpError(
+        400,
+        'Department/position, employment type, status, and start date are required',
+        'VALIDATION',
+      );
+    }
+
+    await withClient(async (client) => {
+      await client.query('BEGIN');
+      try {
+        const { rows: existing } = await client.query(
+          `SELECT id FROM employees WHERE id = $1 AND deleted_at IS NULL`,
+          [req.params.id],
+        );
+        if (!existing[0]) throw new HttpError(404, 'Employee not found', 'NOT_FOUND');
+
+        await client.query(
+          `UPDATE employees
+           SET first_name = $2, last_name = $3, email = $4,
+               contact_number = $5, address = $6,
+               updated_by = $7, updated_at = NOW()
+           WHERE id = $1`,
+          [
+            req.params.id,
+            firstName,
+            lastName,
+            email,
+            contactNumber,
+            address,
+            req.session.userId,
+          ],
+        );
+
+        const { rows: primary } = await client.query(
+          `SELECT id FROM employee_assignments
+           WHERE employee_id = $1 AND is_primary = TRUE AND is_active = TRUE AND end_date IS NULL
+           LIMIT 1`,
+          [req.params.id],
+        );
+
+        if (primary[0]) {
+          await client.query(
+            `UPDATE employee_assignments
+             SET department_position_id = $2,
+                 employment_type_id = $3,
+                 employment_status_id = $4,
+                 start_date = $5,
+                 updated_at = NOW()
+             WHERE id = $1`,
+            [
+              primary[0].id,
+              departmentPositionId,
+              employmentTypeId,
+              employmentStatusId,
+              startDate,
+            ],
+          );
+        } else {
+          await client.query(
+            `INSERT INTO employee_assignments (
+               id, employee_id, department_position_id, employment_type_id,
+               employment_status_id, start_date, is_active, is_primary
+             ) VALUES ($1,$2,$3,$4,$5,$6, TRUE, TRUE)`,
+            [
+              ulid(),
+              req.params.id,
+              departmentPositionId,
+              employmentTypeId,
+              employmentStatusId,
+              startDate,
+            ],
+          );
+        }
+
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      }
+    });
+
+    const row = await getEmployeeRow(req.params.id);
+    res.json({ employee: mapEmployee(row) });
+  } catch (err) {
+    if (err.code === '23503') {
+      return next(new HttpError(400, 'Invalid department, position, type, or status', 'VALIDATION'));
+    }
+    next(err);
+  }
+});
+
+employeesRouter.delete('/:id', writeRoles, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `UPDATE employees
+       SET deleted_at = NOW(), is_archived = TRUE, updated_at = NOW(), updated_by = $2
+       WHERE id = $1 AND deleted_at IS NULL
+       RETURNING id`,
+      [req.params.id, req.session.userId],
+    );
+    if (!rows[0]) throw new HttpError(404, 'Employee not found', 'NOT_FOUND');
+
+    await query(
+      `UPDATE employee_assignments
+       SET is_active = FALSE, end_date = COALESCE(end_date, CURRENT_DATE), updated_at = NOW()
+       WHERE employee_id = $1 AND is_active = TRUE`,
+      [req.params.id],
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
