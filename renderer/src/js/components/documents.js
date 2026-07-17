@@ -18,6 +18,15 @@ let _preselectTypeId = '';
 /** @type {Array<object>} */
 let _inboxFiles = [];
 
+const ALLOWED_DOC_MIMES = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/jpeg',
+  'image/png',
+]);
+const ALLOWED_DOC_EXT = /\.(pdf|doc|docx|jpe?g|png)$/i;
+
 export function initDocuments() {
   getEl('close-doc-modal').addEventListener('click', closeUploadModal);
   getEl('doc-modal-cancel').addEventListener('click', closeUploadModal);
@@ -36,6 +45,64 @@ export function initDocuments() {
     });
   });
   getEl('doc-inbox-file')?.addEventListener('change', onInboxFilePicked);
+
+  wireDocDropZone();
+}
+
+function wireDocDropZone() {
+  const zone = getEl('tab-docs');
+  if (!zone || zone.dataset.dropWired) return;
+  zone.dataset.dropWired = '1';
+
+  zone.addEventListener('dragenter', (e) => {
+    if (!canWrite() || !hasFileDrag(e)) return;
+    e.preventDefault();
+    zone.classList.add('doc-drop-active');
+  });
+  zone.addEventListener('dragover', (e) => {
+    if (!canWrite() || !hasFileDrag(e)) return;
+    e.preventDefault();
+    zone.classList.add('doc-drop-active');
+  });
+  zone.addEventListener('dragleave', (e) => {
+    if (e.currentTarget === zone && !zone.contains(e.relatedTarget)) {
+      zone.classList.remove('doc-drop-active');
+    }
+  });
+  zone.addEventListener('drop', (e) => {
+    zone.classList.remove('doc-drop-active');
+    if (!canWrite()) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const file = pickDroppedFile(e.dataTransfer?.files);
+    if (!file) {
+      showToast('Drop a PDF, Word doc, or image (JPG/PNG).', 'error');
+      return;
+    }
+    if (!_emp) {
+      showToast('Open an employee 201 File tab first.', 'info');
+      return;
+    }
+    openUploadModal('', file);
+  });
+}
+
+function hasFileDrag(e) {
+  return [...(e.dataTransfer?.types || [])].includes('Files');
+}
+
+function pickDroppedFile(fileList) {
+  if (!fileList?.length) return null;
+  for (const file of fileList) {
+    if (isAllowedDocFile(file)) return file;
+  }
+  return null;
+}
+
+function isAllowedDocFile(file) {
+  if (ALLOWED_DOC_EXT.test(file.name || '')) return true;
+  if (file.type && ALLOWED_DOC_MIMES.has(file.type)) return true;
+  return false;
 }
 
 export async function renderTabDocs(emp) {
@@ -96,6 +163,7 @@ export async function renderTabDocs(emp) {
       ${uploadToolbar}
       <p style="font-size:12px;color:var(--text-3);margin-bottom:12px;">
         ${documents.length} file(s) · sorted by most recent · multiple versions allowed per type
+        ${canWrite() ? ' · drag & drop files here to upload' : ''}
       </p>
       <div class="doc-list">${docsHtml}</div>`,
     );
@@ -153,7 +221,7 @@ export async function renderTabDocs(emp) {
   }
 }
 
-function openUploadModal(preselectTypeId = '') {
+function openUploadModal(preselectTypeId = '', droppedFile = null) {
   if (!_emp) return;
   _preselectTypeId = preselectTypeId || '';
   getEl('doc-err').textContent = '';
@@ -175,6 +243,8 @@ function openUploadModal(preselectTypeId = '') {
       .join('');
   if (_preselectTypeId) typeEl.value = _preselectTypeId;
 
+  if (droppedFile) applyPickedFile(droppedFile);
+
   getEl('doc-overlay').classList.add('open');
 }
 
@@ -188,6 +258,14 @@ function onFilePicked() {
     getEl('doc-file-meta').textContent = '';
     return;
   }
+  applyPickedFile(file);
+}
+
+function applyPickedFile(file) {
+  const input = getEl('doc-file');
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  input.files = dt.files;
   getEl('doc-file-meta').textContent = `${file.name} · ${formatFileSize(file.size)}`;
   const nameInput = getEl('doc-display-name');
   if (!nameInput.value.trim()) {

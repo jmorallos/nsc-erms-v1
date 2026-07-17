@@ -60,6 +60,17 @@ const App = {
   },
 };
 
+const ROUTE_PAGES = [
+  'employees',
+  'departments',
+  'positions',
+  'scan-inbox',
+  'trash',
+  'backup',
+  'export',
+  'settings',
+];
+
 document.addEventListener('DOMContentLoaded', async () => {
   App.loadPrefs();
   App.applyPrefs();
@@ -88,6 +99,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   wireNavigation();
   wireSearch();
   wireLogout();
+  window.addEventListener('hashchange', () => {
+    if (getEl('app').style.display === 'flex') applyRouteFromHash();
+  });
 
   await restoreSession();
 });
@@ -161,6 +175,7 @@ async function showAppShell(user) {
     await renderEmployeeTable();
     await renderScanInboxPage();
     await renderTrashPage();
+    applyRouteFromHash();
   } catch (err) {
     showToast(err instanceof ApiError ? err.message : 'Failed to load employees.', 'error');
   }
@@ -209,12 +224,29 @@ function wireNavigation() {
     link.addEventListener('click', (e) => {
       e.preventDefault();
       const pageName = link.dataset.page;
-      if (pageName) navTo(pageName, link);
+      if (pageName) navTo(pageName, link, true);
     });
   });
 }
 
-function navTo(pageName, linkEl) {
+function parseRouteHash() {
+  const raw = (location.hash || '').replace(/^#/, '').trim();
+  if (!raw) return 'employees';
+  const page = raw.split('/')[0];
+  return ROUTE_PAGES.includes(page) ? page : 'employees';
+}
+
+function applyRouteFromHash() {
+  const pageName = parseRouteHash();
+  const link = document.querySelector(`#sidebar-nav a[data-page="${pageName}"]`);
+  if (link) navTo(pageName, link, false);
+}
+
+function navTo(pageName, linkEl, updateHash = true) {
+  if (updateHash && location.hash.replace(/^#/, '') !== pageName) {
+    location.hash = pageName;
+  }
+
   document.querySelectorAll('#sidebar-nav a').forEach((a) => a.classList.remove('active'));
   linkEl.classList.add('active');
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));

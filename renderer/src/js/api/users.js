@@ -25,3 +25,10 @@ export function updateUser(id, payload) {
 export function deleteUser(id) {
   return api(`/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
+
+export function resetUserPassword(id, password) {
+  return api(`/users/${encodeURIComponent(id)}/reset-password`, {
+    method: 'POST',
+    body: JSON.stringify({ password }),
+  });
+}

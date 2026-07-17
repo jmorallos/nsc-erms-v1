@@ -380,6 +380,16 @@
                             <h4>Export to CSV</h4>
                             <p>Open in Excel or Google Sheets</p>
                         </div>
+                        <div id="export-html-btn" class="export-card">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#2e6fff" stroke-width="1.5">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <path d="M8 13h8" />
+                                <path d="M8 17h5" />
+                            </svg>
+                            <h4>Download HTML report</h4>
+                            <p>Self-contained file · open and print to PDF</p>
+                        </div>
                         <div id="export-pdf-btn" class="export-card">
                             <svg viewBox="0 0 24 24" fill="none" stroke="#c8253c" stroke-width="1.5">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -388,10 +398,15 @@
                                 <path d="M14 13h2" />
                                 <path d="M14 17h2" />
                             </svg>
-                            <h4>Export to PDF</h4>
-                            <p>Print-ready report</p>
+                            <h4>Print / Save as PDF</h4>
+                            <p>Opens print dialog · choose “Save as PDF”</p>
                         </div>
                     </div>
+                    <p style="font-size:12px;color:var(--text-3);margin-top:16px;max-width:640px;">
+                        <strong>PDF tip:</strong> Use <em>Print / Save as PDF</em> and pick “Microsoft Print to PDF” or
+                        “Save as PDF” in the dialog. Or download the HTML report, open it in your browser, then
+                        Ctrl+P → Save as PDF.
+                    </p>
                 </div>
 
                 <!-- Settings Page -->
@@ -419,6 +434,16 @@
                                     <button data-size="15" class="fs-btn">L</button>
                                     <button data-size="16" class="fs-btn">XL</button>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="settings-card">
+                            <h4>Security</h4>
+                            <div class="setting-row">
+                                <div class="sl">
+                                    <div class="sl-title">Password</div>
+                                    <div class="sl-desc">Update your sign-in password</div>
+                                </div>
+                                <button type="button" id="settings-change-pw" class="btn btn-sm btn-edit">Change password</button>
                             </div>
                         </div>
                         <div class="settings-card">
@@ -470,6 +495,7 @@
                                     <option value="backup.create">Backup create</option>
                                     <option value="user.create">User create</option>
                                     <option value="user.update">User update</option>
+                                    <option value="user.password_reset">User password reset</option>
                                     <option value="user.delete">User delete</option>
                                     <option value="position.create">Position create</option>
                                     <option value="position.update">Position update</option>
@@ -577,16 +603,17 @@
         </div>
     </div>
 
-    <!-- ── ADD USER MODAL ──────────────────────────────────────────── -->
+    <!-- ── ADD / EDIT USER MODAL ───────────────────────────────────── -->
     <div id="user-overlay" class="overlay">
         <div class="modal" style="width:400px;">
             <button id="close-user-modal" class="modal-close">×</button>
-            <h3>Add User Account</h3>
+            <h3 id="user-modal-title">Add User Account</h3>
+            <input type="hidden" id="u-edit-id" value="" />
             <div class="fg" style="margin-bottom:13px;"><label>Full Name *</label><input id="u-name" type="text"
                     placeholder="e.g. Maria Santos" /></div>
-            <div class="fg" style="margin-bottom:13px;"><label>Username *</label><input id="u-user" type="text"
+            <div class="fg user-create-only" style="margin-bottom:13px;"><label>Username *</label><input id="u-user" type="text"
                     placeholder="e.g. msantos" /></div>
-            <div class="fg" style="margin-bottom:13px;"><label>Password *</label><input id="u-pass" type="password"
+            <div class="fg user-create-only" style="margin-bottom:13px;"><label>Password *</label><input id="u-pass" type="password"
                     placeholder="Min. 8 characters" /></div>
             <div class="fg"><label>Role</label>
                 <select id="u-role">
@@ -597,7 +624,32 @@
             </div>
             <div class="modal-actions">
                 <button id="user-modal-cancel" class="btn btn-cancel">Cancel</button>
-                <button id="user-modal-save" class="btn btn-primary">Create User</button>
+                <button id="user-modal-save" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── ADMIN RESET PASSWORD ────────────────────────────────────── -->
+    <div id="reset-pw-overlay" class="overlay">
+        <div class="modal" style="width:400px;">
+            <button id="close-reset-pw-modal" class="modal-close" type="button">×</button>
+            <h3>Reset password</h3>
+            <p style="font-size:12px;color:var(--text-2);margin:-8px 0 14px;">
+                Set a new password for inactive user
+                <strong id="reset-pw-user-label">—</strong>. They must change it on first login after activation.
+            </p>
+            <div class="fg" style="margin-bottom:13px;">
+                <label>New password *</label>
+                <input id="reset-pw-new" type="password" placeholder="Min. 8 characters" autocomplete="new-password" />
+            </div>
+            <div class="fg" style="margin-bottom:13px;">
+                <label>Confirm password *</label>
+                <input id="reset-pw-confirm" type="password" autocomplete="new-password" />
+            </div>
+            <div class="login-err" id="reset-pw-err"></div>
+            <div class="modal-actions">
+                <button id="reset-pw-cancel" class="btn btn-cancel" type="button">Cancel</button>
+                <button id="reset-pw-save" class="btn btn-primary" type="button">Reset password</button>
             </div>
         </div>
     </div>

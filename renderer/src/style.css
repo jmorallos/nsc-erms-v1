@@ -1111,6 +1111,39 @@ body.dark .fab-sample {
     gap: 8px;
 }
 
+#tab-docs {
+    position: relative;
+    min-height: 120px;
+}
+
+#tab-docs.doc-drop-active {
+    outline: 2px dashed var(--blue-500);
+    outline-offset: -6px;
+    background: rgba(46, 111, 255, 0.06);
+    border-radius: 10px;
+}
+
+#tab-docs.doc-drop-active::after {
+    content: 'Drop file to upload';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--blue-700);
+    background: rgba(255, 255, 255, 0.75);
+    border-radius: 10px;
+    pointer-events: none;
+    z-index: 2;
+}
+
+body.dark #tab-docs.doc-drop-active::after {
+    background: rgba(15, 23, 42, 0.82);
+    color: var(--blue-300);
+}
+
 .doc-item {
     display: flex;
     align-items: center;
@@ -1791,9 +1824,32 @@ body.dark .dept-link-pos {
 /* ── Export ───────────────────────────────────────────────────── */
 .export-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 16px;
-    max-width: 500px;
+    max-width: 720px;
+}
+
+.assign-history {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.assign-history-row {
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-subtle);
+}
+
+.assign-history-main {
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.assign-history-meta {
+    font-size: 11.5px;
+    color: var(--text-3);
 }
 
 .export-card {

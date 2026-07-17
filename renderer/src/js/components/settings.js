@@ -4,6 +4,7 @@ import {
   createUser,
   updateUser,
   deleteUser,
+  resetUserPassword,
 } from '../api/users.js';
 import { listEmployees } from '../api/employees.js';
 import { listDepartments } from '../api/departments.js';
@@ -11,13 +12,16 @@ import { listAuditLogs } from '../api/audit.js';
 import { ApiError } from '../api/client.js';
 import { getEl, setHTML, escapeHtml } from '../utils/helpers.js';
 import { showToast } from '../utils/toast.js';
+import { showChangePassword } from './changePassword.js';
 import { canManageUsers, isSuperadmin, setCurrentRole } from '../utils/authz.js';
 
 let _getPrefs = null;
 let _savePrefs = null;
 let _getCurrentUser = () => null;
 let _roles = [];
+let _usersCache = [];
 let _auditPage = 1;
+let _resetUserId = null;
 const AUDIT_PAGE_SIZE = 20;
 
 export function initSettings(getPrefs, savePrefs, getCurrentUser) {
@@ -33,6 +37,8 @@ export function initSettings(getPrefs, savePrefs, getCurrentUser) {
     btn.addEventListener('click', () => handleSetFont(Number(btn.dataset.size), btn));
   });
 
+  getEl('settings-change-pw')?.addEventListener('click', () => showChangePassword(false));
+
   getEl('add-user-btn')?.addEventListener('click', () => {
     openUserModal().catch((err) => {
       showToast(err instanceof ApiError ? err.message : 'Unable to open user form.', 'error');
@@ -42,9 +48,19 @@ export function initSettings(getPrefs, savePrefs, getCurrentUser) {
   getEl('user-modal-cancel')?.addEventListener('click', closeUserModal);
   getEl('user-modal-save')?.addEventListener('click', () => {
     saveUser().catch((err) => {
-      showToast(err instanceof ApiError ? err.message : 'Failed to create user.', 'error');
+      showToast(err instanceof ApiError ? err.message : 'Failed to save user.', 'error');
     });
   });
+
+  getEl('close-reset-pw-modal')?.addEventListener('click', closeResetPasswordModal);
+  getEl('reset-pw-cancel')?.addEventListener('click', closeResetPasswordModal);
+  getEl('reset-pw-save')?.addEventListener('click', () => {
+    submitResetPassword().catch((err) => {
+      getEl('reset-pw-err').textContent =
+        err instanceof ApiError ? err.message : 'Reset failed.';
+    });
+  });
+
   getEl('refresh')?.addEventListener('click', () => {
     refreshStats().catch(() => {});
   });
@@ -108,24 +124,48 @@ function handleSetFont(size, btnEl) {
   showToast(`Font size set to ${size}px.`, 'info');
 }
 
-async function openUserModal() {
+async function openUserModal(editUser = null) {
   syncRoleFromSession();
   if (!canManageUsers()) {
     showToast('You do not have permission to manage users.', 'error');
     return;
   }
-  getEl('u-name').value = '';
-  getEl('u-user').value = '';
+
+  await fillRoleSelect(editUser?.role?.code);
+
+  const isEdit = Boolean(editUser);
+  getEl('user-modal-title').textContent = isEdit ? 'Edit User' : 'Add User Account';
+  getEl('user-modal-save').textContent = isEdit ? 'Save changes' : 'Create user';
+  getEl('u-edit-id').value = isEdit ? editUser.id : '';
+  getEl('u-name').value = editUser?.displayName || '';
+  getEl('u-user').value = editUser?.username || '';
   getEl('u-pass').value = '';
-  await fillRoleSelect();
+
+  document.querySelectorAll('.user-create-only').forEach((el) => {
+    el.style.display = isEdit ? 'none' : '';
+  });
+
+  if (isEdit) {
+    const sel = getEl('u-role');
+    if (editUser.role?.code === 'superadmin' && !isSuperadmin()) {
+      sel.disabled = true;
+    } else {
+      sel.disabled = false;
+      sel.value = editUser.role?.code || 'staff';
+    }
+  } else {
+    getEl('u-role').disabled = false;
+  }
+
   getEl('user-overlay').classList.add('open');
 }
 
 function closeUserModal() {
   getEl('user-overlay').classList.remove('open');
+  getEl('u-edit-id').value = '';
 }
 
-async function fillRoleSelect() {
+async function fillRoleSelect(preselect) {
   const { roles } = await listRoles();
   _roles = roles.filter((r) => {
     if (r.code === 'superadmin') return isSuperadmin();
@@ -138,18 +178,34 @@ async function fillRoleSelect() {
         `<option value="${escapeHtml(r.code)}">${escapeHtml(r.name)}</option>`,
     )
     .join('');
-  if (_roles.some((r) => r.code === 'staff')) {
+  if (preselect && _roles.some((r) => r.code === preselect)) {
+    sel.value = preselect;
+  } else if (_roles.some((r) => r.code === 'staff')) {
     sel.value = 'staff';
   }
 }
 
 async function saveUser() {
+  const editId = getEl('u-edit-id').value.trim();
   const displayName = getEl('u-name').value.trim();
   const username = getEl('u-user').value.trim();
   const password = getEl('u-pass').value;
   const roleCode = getEl('u-role').value;
 
-  if (!displayName || !username || !password) {
+  if (!displayName) {
+    showToast('Display name is required.', 'error');
+    return;
+  }
+
+  if (editId) {
+    await updateUser(editId, { displayName, roleCode });
+    closeUserModal();
+    showToast('User updated.', 'success');
+    await renderUserTable();
+    return;
+  }
+
+  if (!username || !password) {
     showToast('Name, username, and password are required.', 'error');
     return;
   }
@@ -164,11 +220,57 @@ async function saveUser() {
   await renderUserTable();
 }
 
+function openResetPasswordModal(user) {
+  _resetUserId = user.id;
+  getEl('reset-pw-user-label').textContent = user.displayName || user.username;
+  getEl('reset-pw-new').value = '';
+  getEl('reset-pw-confirm').value = '';
+  getEl('reset-pw-err').textContent = '';
+  getEl('reset-pw-overlay').classList.add('open');
+}
+
+function closeResetPasswordModal() {
+  getEl('reset-pw-overlay').classList.remove('open');
+  _resetUserId = null;
+}
+
+async function submitResetPassword() {
+  const errEl = getEl('reset-pw-err');
+  const btn = getEl('reset-pw-save');
+  errEl.textContent = '';
+
+  const password = getEl('reset-pw-new').value;
+  const confirm = getEl('reset-pw-confirm').value;
+
+  if (!password || !confirm) {
+    errEl.textContent = 'Both password fields are required.';
+    return;
+  }
+  if (password.length < 8) {
+    errEl.textContent = 'Password must be at least 8 characters.';
+    return;
+  }
+  if (password !== confirm) {
+    errEl.textContent = 'Passwords do not match.';
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    await resetUserPassword(_resetUserId, password);
+    closeResetPasswordModal();
+    showToast('Password reset. Activate the user when ready.', 'success');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 async function renderUserTable() {
   syncRoleFromSession();
 
   try {
     const { users } = await listUsers();
+    _usersCache = users;
     if (!users.length) {
       setHTML(
         'user-table',
@@ -185,15 +287,21 @@ async function renderUserTable() {
     ${users
       .map((u) => {
         const protectedRole = u.role.code === 'superadmin';
+        const canModify = !protectedRole || isSuperadmin();
         const statusBadge = u.isActive
           ? `<span class="badge active" style="font-size:10px;">Active</span>`
           : `<span class="badge" style="font-size:10px;background:var(--bg-base);color:var(--text-3);">Inactive</span>`;
         let action = '';
-        if (!protectedRole || isSuperadmin()) {
+        if (canModify) {
           if (u.isActive) {
-            action = `<button type="button" class="btn btn-sm btn-del" data-deactivate-user="${u.id}">Deactivate</button>`;
+            action = `<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+              <button type="button" class="btn btn-sm btn-edit" data-edit-user="${u.id}">Edit</button>
+              <button type="button" class="btn btn-sm btn-del" data-deactivate-user="${u.id}">Deactivate</button>
+            </div>`;
           } else {
             action = `<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+              <button type="button" class="btn btn-sm btn-edit" data-edit-user="${u.id}">Edit</button>
+              <button type="button" class="btn btn-sm btn-edit" data-reset-pw-user="${u.id}">Reset password</button>
               <button type="button" class="btn btn-sm btn-edit" data-activate-user="${u.id}">Activate</button>
               <button type="button" class="btn btn-sm btn-del" data-delete-user="${u.id}">Delete forever</button>
             </div>`;
@@ -213,6 +321,16 @@ async function renderUserTable() {
       .join('')}`,
     );
 
+    document.querySelectorAll('[data-edit-user]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const user = _usersCache.find((u) => u.id === btn.dataset.editUser);
+        if (user) {
+          openUserModal(user).catch((err) => {
+            showToast(err instanceof ApiError ? err.message : 'Unable to open user form.', 'error');
+          });
+        }
+      });
+    });
     document.querySelectorAll('[data-deactivate-user]').forEach((btn) => {
       btn.addEventListener('click', () => {
         toggleUserActive(btn.dataset.deactivateUser, false).catch((err) => {
@@ -225,6 +343,12 @@ async function renderUserTable() {
         toggleUserActive(btn.dataset.activateUser, true).catch((err) => {
           showToast(err instanceof ApiError ? err.message : 'Activate failed.', 'error');
         });
+      });
+    });
+    document.querySelectorAll('[data-reset-pw-user]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const user = _usersCache.find((u) => u.id === btn.dataset.resetPwUser);
+        if (user) openResetPasswordModal(user);
       });
     });
     document.querySelectorAll('[data-delete-user]').forEach((btn) => {

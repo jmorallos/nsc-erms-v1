@@ -18,6 +18,10 @@ export function getEmployee(id) {
   return api(`/employees/${id}`);
 }
 
+export function listEmployeeAssignments(id) {
+  return api(`/employees/${encodeURIComponent(id)}/assignments`);
+}
+
 export function createEmployee(data) {
   return api('/employees', { method: 'POST', body: JSON.stringify(data) });
 }

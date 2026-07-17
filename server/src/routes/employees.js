@@ -242,6 +242,47 @@ employeesRouter.get('/', async (req, res, next) => {
   }
 });
 
+employeesRouter.get('/:id/assignments', async (req, res, next) => {
+  try {
+    const { rows: emp } = await query(
+      `SELECT id FROM employees WHERE id = $1 AND deleted_at IS NULL`,
+      [req.params.id],
+    );
+    if (!emp[0]) throw new HttpError(404, 'Employee not found', 'NOT_FOUND');
+
+    const { rows } = await query(
+      `SELECT ea.id, ea.start_date, ea.end_date, ea.is_primary, ea.is_active,
+              d.name AS department_name, p.name AS position_name,
+              et.name AS employment_type_name, es.name AS employment_status_name
+       FROM employee_assignments ea
+       JOIN department_positions dp ON dp.id = ea.department_position_id
+       JOIN departments d ON d.id = dp.department_id
+       JOIN positions p ON p.id = dp.position_id
+       LEFT JOIN employment_types et ON et.id = ea.employment_type_id
+       LEFT JOIN employment_statuses es ON es.id = ea.employment_status_id
+       WHERE ea.employee_id = $1
+       ORDER BY ea.start_date DESC NULLS LAST, ea.created_at DESC`,
+      [req.params.id],
+    );
+
+    res.json({
+      assignments: rows.map((r) => ({
+        id: r.id,
+        startDate: r.start_date,
+        endDate: r.end_date,
+        isPrimary: r.is_primary,
+        isActive: r.is_active,
+        departmentName: r.department_name,
+        positionName: r.position_name,
+        employmentTypeName: r.employment_type_name,
+        employmentStatusName: r.employment_status_name,
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 employeesRouter.get('/:id', async (req, res, next) => {
   try {
     const row = await getEmployeeRow(req.params.id);

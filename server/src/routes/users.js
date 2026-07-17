@@ -229,6 +229,65 @@ usersRouter.patch('/:id', manageRoles, async (req, res, next) => {
   }
 });
 
+/** Set a new password for an inactive user (admin must activate separately). */
+usersRouter.post('/:id/reset-password', manageRoles, async (req, res, next) => {
+  try {
+    const password = String(req.body?.password || '');
+    if (password.length < 8) {
+      throw new HttpError(400, 'Password must be at least 8 characters', 'VALIDATION');
+    }
+
+    const { rows: targetRows } = await query(`${USER_SELECT} WHERE u.id = $1`, [
+      req.params.id,
+    ]);
+    const target = targetRows[0];
+    if (!target) throw new HttpError(404, 'User not found', 'NOT_FOUND');
+
+    if (target.is_active) {
+      throw new HttpError(
+        400,
+        'Deactivate the user before resetting their password',
+        'VALIDATION',
+      );
+    }
+
+    const actorRole = req.userRole;
+    if (target.role_code === 'superadmin' && actorRole !== 'superadmin') {
+      throw new HttpError(403, 'Cannot reset superadmin password', 'FORBIDDEN');
+    }
+
+    const hash = await bcrypt.hash(password, 12);
+    await query(
+      `UPDATE users
+       SET password_hash = $1, must_change_password = TRUE, updated_at = NOW()
+       WHERE id = $2`,
+      [hash, req.params.id],
+    );
+
+    try {
+      await query(
+        `DELETE FROM session WHERE (sess::jsonb ->> 'userId') = $1`,
+        [req.params.id],
+      );
+    } catch {
+      /* session cleanup best-effort */
+    }
+
+    await writeAudit({
+      actorUserId: req.session.userId,
+      action: 'user.password_reset',
+      entityType: 'user',
+      entityId: req.params.id,
+      meta: { username: target.username },
+      ip: clientIp(req),
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 usersRouter.delete('/:id', manageRoles, async (req, res, next) => {
   try {
     const { rows: targetRows } = await query(`${USER_SELECT} WHERE u.id = $1`, [

@@ -1,4 +1,4 @@
-import { getEmployee, deleteEmployee } from '../api/employees.js';
+import { getEmployee, deleteEmployee, listEmployeeAssignments } from '../api/employees.js';
 import { ApiError } from '../api/client.js';
 import { getEl, setHTML, getInitials, getStatusBadge, getYearsOfService, escapeHtml } from '../utils/helpers.js';
 import { showToast } from '../utils/toast.js';
@@ -56,7 +56,7 @@ async function switchTab(tabName, buttonEl) {
   try {
     const { employee } = await getEmployee(_panelEmpId);
     if (tabName === 'info') renderTabInfo(employee);
-    if (tabName === 'employment') renderTabEmployment(employee);
+    if (tabName === 'employment') await renderTabEmployment(employee);
     if (tabName === 'docs') renderTabDocs(employee);
   } catch (err) {
     showToast(err instanceof ApiError ? err.message : 'Failed to load tab.', 'error');
@@ -77,13 +77,54 @@ function renderTabInfo(emp) {
   );
 }
 
-function renderTabEmployment(emp) {
+async function renderTabEmployment(emp) {
   const a = emp.assignment;
   setHTML(
     'tab-employment',
-    `
+    `<div class="empty" style="padding:20px 0">Loading assignment history…</div>`,
+  );
+
+  try {
+    const { assignments } = await listEmployeeAssignments(emp.id);
+    const showHistory =
+      assignments.length > 1 || assignments.some((row) => row.endDate);
+    const historyHtml = showHistory
+        ? `<div class="info-section" style="margin-top:18px;">
+            <h4>Assignment history</h4>
+            <div class="assign-history">
+              ${assignments
+                .map((row) => {
+                  const start = row.startDate ? String(row.startDate).slice(0, 10) : '—';
+                  const end = row.endDate ? String(row.endDate).slice(0, 10) : row.isActive ? 'Present' : '—';
+                  const tags = [
+                    row.isPrimary && row.isActive ? '<span class="ph-badge">Primary</span>' : '',
+                    !row.isActive ? '<span class="ph-badge" style="opacity:.7">Ended</span>' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ');
+                  return `
+                <div class="assign-history-row">
+                  <div class="assign-history-main">
+                    <strong>${escapeHtml(row.positionName || '—')}</strong>
+                    <span style="color:var(--text-2);"> · ${escapeHtml(row.departmentName || '—')}</span>
+                    ${tags ? `<div style="margin-top:4px;">${tags}</div>` : ''}
+                  </div>
+                  <div class="assign-history-meta">
+                    ${escapeHtml(start)} → ${escapeHtml(end)}
+                    · ${escapeHtml(row.employmentStatusName || '—')}
+                  </div>
+                </div>`;
+                })
+                .join('')}
+            </div>
+          </div>`
+        : '';
+
+    setHTML(
+      'tab-employment',
+      `
     <div class="info-section">
-      <h4>Employment Details</h4>
+      <h4>Current employment</h4>
       <div class="info-row"><span class="ir-label">Employee No</span><span class="ir-val" style="font-family:'DM Mono',monospace;">${escapeHtml(emp.employeeNo)}</span></div>
       <div class="info-row"><span class="ir-label">Position</span><span class="ir-val">${escapeHtml(a?.positionName || '—')}</span></div>
       <div class="info-row"><span class="ir-label">Department</span><span class="ir-val">${escapeHtml(a?.departmentName || '—')}</span></div>
@@ -91,8 +132,15 @@ function renderTabEmployment(emp) {
       <div class="info-row"><span class="ir-label">Status</span><span class="ir-val">${getStatusBadge(a?.employmentStatusName || '—')}</span></div>
       <div class="info-row"><span class="ir-label">Start Date</span><span class="ir-val">${escapeHtml(a?.startDate ? String(a.startDate).slice(0, 10) : '—')}</span></div>
       <div class="info-row"><span class="ir-label">Years of Service</span><span class="ir-val">${getYearsOfService(a?.startDate)}</span></div>
-    </div>`,
-  );
+    </div>
+    ${historyHtml}`,
+    );
+  } catch (err) {
+    setHTML(
+      'tab-employment',
+      `<div class="empty" style="padding:20px 0;color:var(--error)">${escapeHtml(err.message || 'Failed to load assignments')}</div>`,
+    );
+  }
 }
 
 function renderPanelHeader(emp) {
