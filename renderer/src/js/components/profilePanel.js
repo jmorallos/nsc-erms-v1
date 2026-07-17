@@ -1,5 +1,6 @@
-import { getEmployeeById, deleteEmployee } from '../store/employees.js';
-import { getEl, setHTML, getInitials, getStatusBadge, getYearsOfService } from '../utils/helpers.js';
+import { getEmployee, deleteEmployee } from '../api/employees.js';
+import { ApiError } from '../api/client.js';
+import { getEl, setHTML, getInitials, getStatusBadge, getYearsOfService, escapeHtml } from '../utils/helpers.js';
 import { showToast } from '../utils/toast.js';
 import { renderEmployeeTable } from './employeeTable.js';
 import { openEmployeeModal } from './employeeModal.js';
@@ -9,111 +10,136 @@ let _panelEmpId = null;
 let _getSearchQuery = () => '';
 
 export function initProfilePanel(getSearchQuery) {
-    _getSearchQuery = getSearchQuery;
-    getEl('panel-backdrop').addEventListener('click', closeProfilePanel);
+  _getSearchQuery = getSearchQuery;
+  getEl('panel-backdrop').addEventListener('click', closeProfilePanel);
 
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => switchTab(btn.dataset.tab, btn));
-    });
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab, btn));
+  });
 }
 
-export function openProfilePanel(empId) {
-    const emp = getEmployeeById(empId);
-    if (!emp) return;
+export async function openProfilePanel(empId) {
+  try {
+    const { employee } = await getEmployee(empId);
     _panelEmpId = empId;
-    renderPanelHeader(emp);
+    renderPanelHeader(employee);
     activateTab('info');
-    renderTabInfo(emp);
+    renderTabInfo(employee);
     getEl('panel').classList.add('open');
     getEl('panel-backdrop').classList.add('open');
+  } catch (err) {
+    showToast(err instanceof ApiError ? err.message : 'Could not open profile.', 'error');
+  }
 }
 
 export function closeProfilePanel() {
-    getEl('panel').classList.remove('open');
-    getEl('panel-backdrop').classList.remove('open');
-    _panelEmpId = null;
+  getEl('panel').classList.remove('open');
+  getEl('panel-backdrop').classList.remove('open');
+  _panelEmpId = null;
 }
 
-export function refreshPanelHeader() {
-    if (_panelEmpId === null) return;
-    const emp = getEmployeeById(_panelEmpId);
-    if (emp) renderPanelHeader(emp);
+export async function refreshPanelHeader() {
+  if (_panelEmpId === null) return;
+  try {
+    const { employee } = await getEmployee(_panelEmpId);
+    renderPanelHeader(employee);
+  } catch { /* ignore */ }
 }
 
-function switchTab(tabName, buttonEl) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    buttonEl.classList.add('active');
-    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-    getEl('tab-' + tabName).classList.add('active');
-    if (_panelEmpId === null) return;
-    const emp = getEmployeeById(_panelEmpId);
-    if (!emp) return;
-    if (tabName === 'info') renderTabInfo(emp);
-    if (tabName === 'employment') renderTabEmployment(emp);
-    if (tabName === 'docs') renderTabDocs(emp);
+async function switchTab(tabName, buttonEl) {
+  document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+  buttonEl.classList.add('active');
+  document.querySelectorAll('.tab-pane').forEach((p) => p.classList.remove('active'));
+  getEl('tab-' + tabName).classList.add('active');
+  if (_panelEmpId === null) return;
+  try {
+    const { employee } = await getEmployee(_panelEmpId);
+    if (tabName === 'info') renderTabInfo(employee);
+    if (tabName === 'employment') renderTabEmployment(employee);
+    if (tabName === 'docs') renderTabDocs(employee);
+  } catch (err) {
+    showToast(err instanceof ApiError ? err.message : 'Failed to load tab.', 'error');
+  }
 }
 
 function renderTabInfo(emp) {
-    setHTML('tab-info', `
+  setHTML(
+    'tab-info',
+    `
     <div class="info-section">
       <h4>Personal Information</h4>
-      <div class="info-row"><span class="ir-label">Full Name</span><span class="ir-val">${emp.fname} ${emp.lname}</span></div>
-      <div class="info-row"><span class="ir-label">Email</span><span class="ir-val">${emp.email}</span></div>
-      <div class="info-row"><span class="ir-label">Contact</span><span class="ir-val">${emp.contact || '—'}</span></div>
-      <div class="info-row"><span class="ir-label">Address</span><span class="ir-val">${emp.address || '—'}</span></div>
-    </div>`);
+      <div class="info-row"><span class="ir-label">Full Name</span><span class="ir-val">${escapeHtml(emp.firstName)} ${escapeHtml(emp.lastName)}</span></div>
+      <div class="info-row"><span class="ir-label">Email</span><span class="ir-val">${escapeHtml(emp.email)}</span></div>
+      <div class="info-row"><span class="ir-label">Contact</span><span class="ir-val">${escapeHtml(emp.contactNumber || '—')}</span></div>
+      <div class="info-row"><span class="ir-label">Address</span><span class="ir-val">${escapeHtml(emp.address || '—')}</span></div>
+    </div>`,
+  );
 }
 
 function renderTabEmployment(emp) {
-    setHTML('tab-employment', `
+  const a = emp.assignment;
+  setHTML(
+    'tab-employment',
+    `
     <div class="info-section">
       <h4>Employment Details</h4>
-      <div class="info-row"><span class="ir-label">Employee ID</span><span class="ir-val" style="font-family:'DM Mono',monospace;">EMP-${String(emp.id).padStart(5, '0')}</span></div>
-      <div class="info-row"><span class="ir-label">Position</span><span class="ir-val">${emp.position}</span></div>
-      <div class="info-row"><span class="ir-label">Department</span><span class="ir-val">${emp.dept || '—'}</span></div>
-      <div class="info-row"><span class="ir-label">Status</span><span class="ir-val">${getStatusBadge(emp.status)}</span></div>
-      <div class="info-row"><span class="ir-label">Start Date</span><span class="ir-val">${emp.start_date || '—'}</span></div>
-      <div class="info-row"><span class="ir-label">Years of Service</span><span class="ir-val">${getYearsOfService(emp.start_date)}</span></div>
-    </div>`);
+      <div class="info-row"><span class="ir-label">Employee No</span><span class="ir-val" style="font-family:'DM Mono',monospace;">${escapeHtml(emp.employeeNo)}</span></div>
+      <div class="info-row"><span class="ir-label">Position</span><span class="ir-val">${escapeHtml(a?.positionName || '—')}</span></div>
+      <div class="info-row"><span class="ir-label">Department</span><span class="ir-val">${escapeHtml(a?.departmentName || '—')}</span></div>
+      <div class="info-row"><span class="ir-label">Employment type</span><span class="ir-val">${escapeHtml(a?.employmentTypeName || '—')}</span></div>
+      <div class="info-row"><span class="ir-label">Status</span><span class="ir-val">${getStatusBadge(a?.employmentStatusName || '—')}</span></div>
+      <div class="info-row"><span class="ir-label">Start Date</span><span class="ir-val">${escapeHtml(a?.startDate ? String(a.startDate).slice(0, 10) : '—')}</span></div>
+      <div class="info-row"><span class="ir-label">Years of Service</span><span class="ir-val">${getYearsOfService(a?.startDate)}</span></div>
+    </div>`,
+  );
 }
 
 function renderPanelHeader(emp) {
-    const pic = emp.picture
-        ? `<img src="${emp.picture}" class="ph-avatar-lg" alt=""/>`
-        : `<div class="ph-ini-lg">${getInitials(emp.fname, emp.lname)}</div>`;
+  const a = emp.assignment;
+  const pic = `<div class="ph-ini-lg">${getInitials(emp.firstName, emp.lastName)}</div>`;
 
-    setHTML('panel-header', `
+  setHTML(
+    'panel-header',
+    `
     <button class="ph-close" id="panel-close-btn">×</button>
     ${pic}
-    <h2>${emp.fname} ${emp.lname}</h2>
-    <div class="ph-pos">${emp.position} &middot; ${emp.dept || 'No Department'}</div>
+    <h2>${escapeHtml(emp.firstName)} ${escapeHtml(emp.lastName)}</h2>
+    <div class="ph-pos">${escapeHtml(a?.positionName || 'No position')} &middot; ${escapeHtml(a?.departmentName || 'No Department')}</div>
     <div class="ph-badges">
-      <span class="ph-badge">${emp.status}</span>
-      <span class="ph-badge">EMP-${String(emp.id).padStart(5, '0')}</span>
-      ${emp.start_date ? `<span class="ph-badge">Since ${emp.start_date}</span>` : ''}
+      <span class="ph-badge">${escapeHtml(a?.employmentStatusName || '—')}</span>
+      <span class="ph-badge">${escapeHtml(emp.employeeNo)}</span>
+      ${a?.startDate ? `<span class="ph-badge">Since ${escapeHtml(String(a.startDate).slice(0, 10))}</span>` : ''}
     </div>
     <div class="ph-actions">
       <button class="phbtn phbtn-edit" id="panel-edit-btn">Edit</button>
       <button class="phbtn phbtn-del" id="panel-delete-btn">Delete</button>
-    </div>`);
+    </div>`,
+  );
 
-    document.getElementById('panel-close-btn').addEventListener('click', closeProfilePanel);
-    document.getElementById('panel-edit-btn').addEventListener('click', () => {
-        openEmployeeModal(emp.id);
-        closeProfilePanel();
-    });
-    document.getElementById('panel-delete-btn').addEventListener('click', () => handleDeleteEmployee(emp.id));
+  document.getElementById('panel-close-btn').addEventListener('click', closeProfilePanel);
+  document.getElementById('panel-edit-btn').addEventListener('click', () => {
+    openEmployeeModal(emp.id);
+    closeProfilePanel();
+  });
+  document.getElementById('panel-delete-btn').addEventListener('click', () => {
+    handleDeleteEmployee(emp.id);
+  });
 }
 
 function activateTab(name) {
-    document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
-    document.querySelectorAll('.tab-pane').forEach((p, i) => p.classList.toggle('active', i === 0));
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+  document.querySelectorAll('.tab-pane').forEach((p, i) => p.classList.toggle('active', i === 0));
+  void name;
 }
 
-function handleDeleteEmployee(empId) {
-    if (!confirm('Delete this employee? This cannot be undone.')) return;
-    deleteEmployee(empId);
+async function handleDeleteEmployee(empId) {
+  if (!confirm('Delete this employee? This cannot be undone.')) return;
+  try {
+    await deleteEmployee(empId);
     closeProfilePanel();
-    renderEmployeeTable(_getSearchQuery());
+    await renderEmployeeTable(_getSearchQuery());
     showToast('Employee deleted.', 'success');
+  } catch (err) {
+    showToast(err instanceof ApiError ? err.message : 'Delete failed.', 'error');
+  }
 }

@@ -1,100 +1,237 @@
-import { getEmployeeById, addEmployee, updateEmployee } from '../store/employees.js';
-import { getEl, getInitials } from '../utils/helpers.js';
+import {
+  listEmployees,
+  getEmployee,
+  createEmployee,
+  updateEmployee,
+} from '../api/employees.js';
+import {
+  listDepartments,
+  getDepartmentPositions,
+  listEmploymentTypes,
+  listEmploymentStatuses,
+} from '../api/departments.js';
+import { ApiError } from '../api/client.js';
+import { getEl, getInitials, getToday } from '../utils/helpers.js';
 import { showToast } from '../utils/toast.js';
-import { populateDeptDropdowns, renderEmployeeTable } from './employeeTable.js';
+import { renderEmployeeTable, refreshFilterDropdowns } from './employeeTable.js';
 
 let _editingEmpId = null;
-let _tempPhoto = null;
 let _getSearchQuery = () => '';
+let _employmentTypes = [];
+let _employmentStatuses = [];
 
 export function initEmployeeModal(getSearchQuery) {
-    _getSearchQuery = getSearchQuery;
+  _getSearchQuery = getSearchQuery;
 
-    getEl('emp-modal-cancel').addEventListener('click', closeEmployeeModal);
-    getEl('close-emp-modal').addEventListener('click', closeEmployeeModal);
-    getEl('emp-modal-save').addEventListener('click', saveEmployee);
-    getEl('pic-input').addEventListener('change', (e) => previewPhoto(e.target));
-    getEl('add-emp-btn').addEventListener('click', () => openEmployeeModal(null));
+  getEl('emp-modal-cancel').addEventListener('click', closeEmployeeModal);
+  getEl('close-emp-modal').addEventListener('click', closeEmployeeModal);
+  getEl('emp-modal-save').addEventListener('click', () => {
+    saveEmployee().catch((err) => {
+      showToast(err instanceof ApiError ? err.message : 'Save failed.', 'error');
+    });
+  });
+  getEl('pic-input').addEventListener('change', (e) => previewPhoto(e.target));
+  getEl('add-emp-btn').addEventListener('click', () => openEmployeeModal(null));
+  getEl('f-dept').addEventListener('change', () => {
+    loadPositionsForDepartment(getEl('f-dept').value).catch(() => {
+      resetPositionSelect();
+    });
+  });
 }
 
-export function openEmployeeModal(empId = null) {
-    _editingEmpId = empId;
-    _tempPhoto = null;
-    getEl('emp-modal-title').textContent = empId ? 'Edit Employee' : 'Add Employee';
-    getEl('pic-input').value = '';
-    populateDeptDropdowns();
-    if (empId) { prefillForm(getEmployeeById(empId)); } else { clearForm(); }
-    getEl('emp-overlay').classList.add('open');
+export async function openEmployeeModal(empId = null) {
+  _editingEmpId = empId;
+  getEl('emp-modal-title').textContent = empId ? 'Edit Employee' : 'Add Employee';
+  getEl('pic-input').value = '';
+  getEl('emp-overlay').classList.add('open');
+
+  try {
+    await Promise.all([loadDeptOptions(), loadTypeAndStatusOptions()]);
+    if (empId) {
+      const { employee } = await getEmployee(empId);
+      await prefillForm(employee);
+    } else {
+      clearForm();
+    }
+  } catch (err) {
+    showToast(err instanceof ApiError ? err.message : 'Could not open form.', 'error');
+    closeEmployeeModal();
+  }
 }
 
 export function closeEmployeeModal() {
-    getEl('emp-overlay').classList.remove('open');
-    _editingEmpId = null;
-    _tempPhoto = null;
+  getEl('emp-overlay').classList.remove('open');
+  _editingEmpId = null;
 }
 
 function previewPhoto(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        _tempPhoto = e.target.result;
-        getEl('pic-preview').outerHTML = `<img id="pic-preview" src="${_tempPhoto}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2.5px solid var(--blue-500);" alt=""/>`;
-    };
-    reader.readAsDataURL(file);
+  const file = input.files[0];
+  if (!file) return;
+  showToast('Photo upload to server will be enabled with document storage.', 'info');
+  input.value = '';
 }
 
-function saveEmployee() {
-    const fname = getEl('f-fname').value.trim(), lname = getEl('f-lname').value.trim(),
-        email = getEl('f-email').value.trim(), position = getEl('f-position').value.trim();
-    if (!fname || !lname || !email || !position) {
-        showToast('Please fill in all required fields (*).', 'error');
-        return;
-    }
-    const data = {
-        fname, lname, email, position,
-        contact: getEl('f-contact').value.trim(),
-        address: getEl('f-address').value.trim(),
-        dept: getEl('f-dept').value,
-        status: getEl('f-status').value,
-        start_date: getEl('f-start').value,
-        picture: _tempPhoto ?? (getEmployeeById(_editingEmpId)?.picture ?? null),
-    };
+async function loadDeptOptions() {
+  const { departments } = await listDepartments();
+  const select = getEl('f-dept');
+  const cur = select.value;
+  select.innerHTML =
+    '<option value="">Select department</option>' +
+    departments
+      .map((d) => `<option value="${d.id}">${escapeAttr(d.name)}</option>`)
+      .join('');
+  if (cur) select.value = cur;
+}
+
+async function loadTypeAndStatusOptions() {
+  const [typesRes, statusRes] = await Promise.all([
+    listEmploymentTypes(),
+    listEmploymentStatuses(),
+  ]);
+  _employmentTypes = typesRes.employmentTypes;
+  _employmentStatuses = statusRes.employmentStatuses;
+
+  const typeEl = getEl('f-emp-type');
+  typeEl.innerHTML = _employmentTypes
+    .map((t) => `<option value="${t.id}">${escapeAttr(t.name)}</option>`)
+    .join('');
+
+  const statusEl = getEl('f-status');
+  statusEl.innerHTML = _employmentStatuses
+    .map((s) => `<option value="${s.id}">${escapeAttr(s.name)}</option>`)
+    .join('');
+}
+
+async function loadPositionsForDepartment(departmentId, selectedDepartmentPositionId = '') {
+  const posEl = getEl('f-position');
+  if (!departmentId) {
+    resetPositionSelect();
+    return;
+  }
+  posEl.disabled = true;
+  posEl.innerHTML = '<option value="">Loading…</option>';
+  const { positions } = await getDepartmentPositions(departmentId);
+  if (!positions.length) {
+    posEl.innerHTML = '<option value="">No positions for this department</option>';
+    posEl.disabled = true;
+    return;
+  }
+  posEl.innerHTML =
+    '<option value="">Select position</option>' +
+    positions
+      .map(
+        (p) =>
+          `<option value="${p.department_position_id}">${escapeAttr(p.position_name)}</option>`,
+      )
+      .join('');
+  posEl.disabled = false;
+  if (selectedDepartmentPositionId) {
+    posEl.value = selectedDepartmentPositionId;
+  }
+}
+
+function resetPositionSelect() {
+  const posEl = getEl('f-position');
+  posEl.innerHTML = '<option value="">Select department first</option>';
+  posEl.disabled = true;
+}
+
+async function saveEmployee() {
+  const firstName = getEl('f-fname').value.trim();
+  const lastName = getEl('f-lname').value.trim();
+  const email = getEl('f-email').value.trim();
+  const departmentId = getEl('f-dept').value;
+  const departmentPositionId = getEl('f-position').value;
+  const employmentTypeId = getEl('f-emp-type').value;
+  const employmentStatusId = getEl('f-status').value;
+  const startDate = getEl('f-start').value;
+
+  if (
+    !firstName ||
+    !lastName ||
+    !email ||
+    !departmentId ||
+    !departmentPositionId ||
+    !employmentTypeId ||
+    !employmentStatusId ||
+    !startDate
+  ) {
+    showToast('Please fill in all required fields (*).', 'error');
+    return;
+  }
+
+  const payload = {
+    firstName,
+    lastName,
+    email,
+    contactNumber: getEl('f-contact').value.trim(),
+    address: getEl('f-address').value.trim(),
+    departmentPositionId,
+    employmentTypeId,
+    employmentStatusId,
+    startDate,
+  };
+
+  const btn = getEl('emp-modal-save');
+  btn.disabled = true;
+  try {
     if (_editingEmpId) {
-        updateEmployee(_editingEmpId, data);
-        showToast('Employee updated.', 'success');
+      await updateEmployee(_editingEmpId, payload);
+      showToast('Employee updated.', 'success');
     } else {
-        addEmployee(data);
-        showToast('Employee added.', 'success');
+      await createEmployee(payload);
+      showToast('Employee added.', 'success');
     }
     closeEmployeeModal();
-    renderEmployeeTable(_getSearchQuery());
-    populateDeptDropdowns();
+    await renderEmployeeTable(_getSearchQuery());
+    await refreshFilterDropdowns();
+  } finally {
+    btn.disabled = false;
+  }
 }
 
-function prefillForm(emp) {
-    getEl('f-fname').value = emp.fname;
-    getEl('f-lname').value = emp.lname;
-    getEl('f-email').value = emp.email;
-    getEl('f-contact').value = emp.contact ?? '';
-    getEl('f-address').value = emp.address ?? '';
-    getEl('f-position').value = emp.position;
-    getEl('f-status').value = emp.status;
-    getEl('f-start').value = emp.start_date ?? '';
-    setTimeout(() => { const el = document.getElementById('f-dept'); if (el) el.value = emp.dept ?? ''; }, 0);
-    const prevEl = getEl('pic-preview');
-    if (emp.picture) {
-        prevEl.outerHTML = `<img id="pic-preview" src="${emp.picture}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2.5px solid var(--blue-500);" alt=""/>`;
-    } else {
-        prevEl.outerHTML = `<div id="pic-preview" class="pic-ini">${getInitials(emp.fname, emp.lname)}</div>`;
-    }
+async function prefillForm(emp) {
+  getEl('f-fname').value = emp.firstName;
+  getEl('f-lname').value = emp.lastName;
+  getEl('f-email').value = emp.email;
+  getEl('f-contact').value = emp.contactNumber ?? '';
+  getEl('f-address').value = emp.address ?? '';
+
+  const a = emp.assignment;
+  if (a?.employmentTypeId) getEl('f-emp-type').value = a.employmentTypeId;
+  if (a?.employmentStatusId) getEl('f-status').value = a.employmentStatusId;
+  getEl('f-start').value = a?.startDate ? String(a.startDate).slice(0, 10) : '';
+
+  if (a?.departmentId) {
+    getEl('f-dept').value = a.departmentId;
+    await loadPositionsForDepartment(a.departmentId, a.departmentPositionId);
+  } else {
+    resetPositionSelect();
+  }
+
+  const prevEl = getEl('pic-preview');
+  prevEl.outerHTML = `<div id="pic-preview" class="pic-ini">${getInitials(emp.firstName, emp.lastName)}</div>`;
 }
 
 function clearForm() {
-    ['f-fname', 'f-lname', 'f-email', 'f-contact', 'f-address', 'f-position', 'f-start']
-        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    const statusEl = document.getElementById('f-status');
-    if (statusEl) statusEl.value = 'Active';
-    const prevEl = document.getElementById('pic-preview');
-    if (prevEl) prevEl.outerHTML = `<div id="pic-preview" class="pic-ini">?</div>`;
+  ['f-fname', 'f-lname', 'f-email', 'f-contact', 'f-address'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  getEl('f-dept').value = '';
+  resetPositionSelect();
+  getEl('f-start').value = getToday();
+  if (_employmentTypes[0]) getEl('f-emp-type').value = _employmentTypes[0].id;
+  const active = _employmentStatuses.find((s) => s.name === 'Active');
+  if (active) getEl('f-status').value = active.id;
+  else if (_employmentStatuses[0]) getEl('f-status').value = _employmentStatuses[0].id;
+  const prevEl = document.getElementById('pic-preview');
+  if (prevEl) prevEl.outerHTML = `<div id="pic-preview" class="pic-ini">?</div>`;
+}
+
+function escapeAttr(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;');
 }

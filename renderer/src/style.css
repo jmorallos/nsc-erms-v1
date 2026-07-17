@@ -1633,6 +1633,33 @@ body.dark .dept-card .dcount {
     overflow: hidden;
 }
 
+#setup-screen {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, var(--blue-900) 0%, #1048b8 50%, var(--cyan-500) 100%);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 998;
+    overflow: auto;
+    padding: 24px;
+}
+
+.setup-box {
+    width: min(460px, 100%);
+    text-align: left;
+}
+
+.setup-box h1,
+.setup-box > p {
+    text-align: center;
+}
+
+.login-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
 #login-screen::before {
     content: '';
     position: absolute;

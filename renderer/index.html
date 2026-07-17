@@ -37,6 +37,32 @@
         </div>
     </div>
 
+    <!-- ── FIRST-RUN SETUP ────────────────────────────────────────── -->
+    <div id="setup-screen" style="display:none;">
+        <div class="login-box setup-box">
+            <h1>First-run setup</h1>
+            <p>Configure institution paths for the Registrar server.</p>
+            <div class="login-field">
+                <label>Organization name</label>
+                <input type="text" id="setup-org" />
+            </div>
+            <div class="login-field">
+                <label>Files root (disk)</label>
+                <input type="text" id="setup-files" />
+            </div>
+            <div class="login-field">
+                <label>Scan inbox folder</label>
+                <input type="text" id="setup-inbox" />
+            </div>
+            <div class="login-field">
+                <label>Max upload bytes (max 31457280)</label>
+                <input type="number" id="setup-max" />
+            </div>
+            <div class="login-err" id="setup-err"></div>
+            <button id="setup-finish-btn" class="login-btn">Finish setup</button>
+        </div>
+    </div>
+
     <!-- ── APP SHELL ──────────────────────────────────────────────── -->
     <div id="app" style="display:none;">
 
@@ -107,7 +133,7 @@
                     <div class="su-name" id="su-name">Admin</div>
                     <div class="su-role" id="su-role">HR Administrator</div>
                 </div>
-                <button id="logout-btn" class="su-logout" title="Logout" onclick="handleLogout()">
+                <button id="logout-btn" class="su-logout" title="Logout" type="button">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                         <polyline points="16 17 21 12 16 7" />
@@ -173,7 +199,7 @@
                 <!-- Departments Page -->
                 <div id="page-departments" class="page">
                     <div class="toolbar">
-                        <button id="add-dept-btn" class="btn btn-primary" onclick="openDeptModal()">
+                        <button id="add-dept-btn" class="btn btn-primary" type="button">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2.5">
                                 <line x1="12" y1="5" x2="12" y2="19" />
@@ -229,8 +255,7 @@
                                 </svg>
                                 Select Backup File
                             </label>
-                            <input type="file" id="restore-input" accept=".json" style="display:none"
-                                onchange="handleRestoreBackup(this)" />
+                            <input type="file" id="restore-input" accept=".json" style="display:none" />
                         </div>
                     </div>
                 </div>
@@ -351,7 +376,7 @@
             <div class="pic-wrap">
                 <div id="pic-preview" class="pic-ini">?</div>
                 <label class="pic-lbl" for="pic-input">Upload Photo</label>
-                <input type="file" id="pic-input" accept="image/*" style="display:none" onchange="previewPhoto(this)" />
+                <input type="file" id="pic-input" accept="image/*" style="display:none"  />
             </div>
             <div class="form-grid">
                 <div class="fg"><label>First Name *</label><input id="f-fname" type="text" /></div>
@@ -359,16 +384,11 @@
                 <div class="fg"><label>Email *</label><input id="f-email" type="email" /></div>
                 <div class="fg"><label>Contact</label><input id="f-contact" type="text" /></div>
                 <div class="fg full"><label>Address</label><textarea id="f-address"></textarea></div>
-                <div class="fg"><label>Position *</label><input id="f-position" type="text" /></div>
-                <div class="fg"><label>Department</label><select id="f-dept"></select></div>
-                <div class="fg"><label>Status</label>
-                    <select id="f-status">
-                        <option>Active</option>
-                        <option>Inactive</option>
-                        <option>On Leave</option>
-                    </select>
-                </div>
-                <div class="fg"><label>Start Date</label><input id="f-start" type="date" /></div>
+                <div class="fg"><label>Department *</label><select id="f-dept"><option value="">Select department</option></select></div>
+                <div class="fg"><label>Position *</label><select id="f-position" disabled><option value="">Select department first</option></select></div>
+                <div class="fg"><label>Employment type *</label><select id="f-emp-type"></select></div>
+                <div class="fg"><label>Status *</label><select id="f-status"></select></div>
+                <div class="fg"><label>Start Date *</label><input id="f-start" type="date" /></div>
             </div>
             <div class="modal-actions">
                 <button id="emp-modal-cancel" class="btn btn-cancel">Cancel</button>
@@ -471,6 +491,32 @@
 
     <div id="print-area"></div>
     <div id="toast"></div>
+
+    <!-- -- CHANGE PASSWORD ------------------------------------------- -->
+    <div id="pw-overlay" class="overlay">
+        <div class="modal" style="width:420px;">
+            <h3>Change password</h3>
+            <p id="pw-forced-note" style="font-size:12px;color:var(--text-2);margin:-8px 0 14px;">
+                You must set a new password before continuing.
+            </p>
+            <div class="fg" style="margin-bottom:13px;">
+                <label>Current password</label>
+                <input id="pw-current" type="password" />
+            </div>
+            <div class="fg" style="margin-bottom:13px;">
+                <label>New password</label>
+                <input id="pw-new" type="password" placeholder="Min. 8 characters" />
+            </div>
+            <div class="fg">
+                <label>Confirm new password</label>
+                <input id="pw-confirm" type="password" />
+            </div>
+            <div class="login-err" id="pw-err" style="margin-top:12px;"></div>
+            <div class="modal-actions">
+                <button id="pw-save-btn" class="btn btn-primary" type="button">Update password</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 <script type="module" src="./src/main.js"></script>

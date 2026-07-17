@@ -1,71 +1,94 @@
-import { getAllEmployees } from '../store/employees.js';
-import { getAllDepartments } from '../store/departments.js';
-import { getAvatarHTML, getStatusBadge, getEl } from '../utils/helpers.js';
+import { listEmployees } from '../api/employees.js';
+import { listDepartments, listEmploymentStatuses } from '../api/departments.js';
+import { ApiError } from '../api/client.js';
+import { getAvatarHTML, getStatusBadge, getEl, escapeHtml } from '../utils/helpers.js';
 import { openProfilePanel } from './profilePanel.js';
+import { showToast } from '../utils/toast.js';
 
 export function initEmployeeTable() {
-    getEl('filter-dept').addEventListener('change', () => renderEmployeeTable());
-    getEl('filter-status').addEventListener('change', () => renderEmployeeTable());
+  getEl('filter-dept').addEventListener('change', () => {
+    renderEmployeeTable(getEl('search-input')?.value || '').catch(showLoadError);
+  });
+  getEl('filter-status').addEventListener('change', () => {
+    renderEmployeeTable(getEl('search-input')?.value || '').catch(showLoadError);
+  });
 }
 
-export function renderEmployeeTable(searchQuery = '') {
-    const deptFilter = getEl('filter-dept').value;
-    const statusFilter = getEl('filter-status').value;
-    const q = searchQuery.toLowerCase();
-
-    const filtered = getAllEmployees().filter(emp => {
-        const matchesSearch = !q || [emp.fname, emp.lname, emp.email, emp.position, emp.dept]
-            .some(field => (field ?? '').toLowerCase().includes(q));
-        const matchesDept = !deptFilter || emp.dept === deptFilter;
-        const matchesStatus = !statusFilter || emp.status === statusFilter;
-        return matchesSearch && matchesDept && matchesStatus;
-    });
-
-    const emptyEl = getEl('emp-empty');
-    const tbody = getEl('emp-tbody');
-    emptyEl.style.display = filtered.length ? 'none' : 'block';
-    tbody.innerHTML = filtered.map((emp, i) => buildEmployeeRow(emp, i + 1)).join('');
-
-    tbody.querySelectorAll('tr').forEach((row, i) => {
-        const emp = filtered[i];
-        row.querySelector('[data-profile-trigger]')?.addEventListener('click', () => openProfilePanel(emp.id));
-    });
-
-    const badge = document.getElementById('emp-count-badge');
-    if (badge) badge.textContent = getAllEmployees().length;
+function showLoadError(err) {
+  showToast(err instanceof ApiError ? err.message : 'Failed to load employees.', 'error');
 }
 
-export function populateDeptDropdowns() {
-    const depts = getAllDepartments();
-    const opts = depts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+export async function refreshFilterDropdowns() {
+  const [{ departments }, { employmentStatuses }] = await Promise.all([
+    listDepartments(),
+    listEmploymentStatuses(),
+  ]);
 
-    const filterEl = document.getElementById('filter-dept');
-    if (filterEl) {
-        const cur = filterEl.value;
-        filterEl.innerHTML = '<option value="">All Departments</option>' + opts;
-        filterEl.value = cur;
-    }
+  const filterDept = getEl('filter-dept');
+  const curDept = filterDept.value;
+  filterDept.innerHTML =
+    '<option value="">All Departments</option>' +
+    departments
+      .map((d) => `<option value="${d.id}">${escapeHtml(d.name)}</option>`)
+      .join('');
+  if ([...filterDept.options].some((o) => o.value === curDept)) {
+    filterDept.value = curDept;
+  }
 
-    const modalEl = document.getElementById('f-dept');
-    if (modalEl) modalEl.innerHTML = opts;
+  const filterStatus = getEl('filter-status');
+  const curStatus = filterStatus.value;
+  filterStatus.innerHTML =
+    '<option value="">All Status</option>' +
+    employmentStatuses
+      .map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`)
+      .join('');
+  if ([...filterStatus.options].some((o) => o.value === curStatus)) {
+    filterStatus.value = curStatus;
+  }
+}
+
+export async function renderEmployeeTable(searchQuery = '') {
+  const departmentId = getEl('filter-dept').value;
+  const statusId = getEl('filter-status').value;
+  const { employees } = await listEmployees({
+    q: searchQuery,
+    departmentId,
+    statusId,
+  });
+
+  const emptyEl = getEl('emp-empty');
+  const tbody = getEl('emp-tbody');
+  emptyEl.style.display = employees.length ? 'none' : 'block';
+  tbody.innerHTML = employees.map((emp, i) => buildEmployeeRow(emp, i + 1)).join('');
+
+  tbody.querySelectorAll('tr').forEach((row, i) => {
+    const emp = employees[i];
+    row.querySelector('[data-profile-trigger]')?.addEventListener('click', () => {
+      openProfilePanel(emp.id);
+    });
+  });
+
+  const badge = document.getElementById('emp-count-badge');
+  if (badge) badge.textContent = String(employees.length);
 }
 
 function buildEmployeeRow(emp, rowNumber) {
-    return `
+  const status = emp.assignment?.employmentStatusName || '—';
+  return `
     <tr>
       <td style="color:var(--text-3);font-size:12px;font-family:'DM Mono',monospace;">${String(rowNumber).padStart(2, '0')}</td>
       <td style="cursor:pointer;" data-profile-trigger>
         <div style="display:flex;align-items:center;gap:10px;">
           ${getAvatarHTML(emp, 34, 12)}
           <div>
-            <div style="font-weight:700;color:var(--blue-900);letter-spacing:-.2px;">${emp.fname} ${emp.lname}</div>
-            <div style="font-size:11px;color:var(--text-3);">${emp.email}</div>
+            <div style="font-weight:700;color:var(--blue-900);letter-spacing:-.2px;">${escapeHtml(emp.firstName)} ${escapeHtml(emp.lastName)}</div>
+            <div style="font-size:11px;color:var(--text-3);">${escapeHtml(emp.email)}</div>
           </div>
         </div>
       </td>
-      <td style="color:var(--text-2);font-size:12.5px;">${emp.contact || '—'}</td>
-      <td style="font-weight:500;">${emp.position}</td>
-      <td style="color:var(--text-2);">${emp.dept || '—'}</td>
-      <td>${getStatusBadge(emp.status)}</td>
+      <td style="color:var(--text-2);font-size:12.5px;">${escapeHtml(emp.contactNumber || '—')}</td>
+      <td style="font-weight:500;">${escapeHtml(emp.assignment?.positionName || '—')}</td>
+      <td style="color:var(--text-2);">${escapeHtml(emp.assignment?.departmentName || '—')}</td>
+      <td>${getStatusBadge(status)}</td>
     </tr>`;
 }
