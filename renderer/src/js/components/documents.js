@@ -6,6 +6,7 @@ import {
   restoreDocument,
   downloadDocumentUrl,
 } from '../api/documents.js';
+import { listScanInbox, assignScanInboxFile } from '../api/scanInbox.js';
 import { getEl, setHTML, escapeHtml, formatFileSize } from '../utils/helpers.js';
 import { showToast } from '../utils/toast.js';
 import { refreshPanelHeader } from './profilePanel.js';
@@ -14,6 +15,8 @@ import { canWrite } from '../utils/authz.js';
 let _emp = null;
 let _documentTypes = [];
 let _preselectTypeId = '';
+/** @type {Array<object>} */
+let _inboxFiles = [];
 
 export function initDocuments() {
   getEl('close-doc-modal').addEventListener('click', closeUploadModal);
@@ -24,6 +27,15 @@ export function initDocuments() {
     });
   });
   getEl('doc-file').addEventListener('change', onFilePicked);
+
+  getEl('close-doc-inbox-modal')?.addEventListener('click', closeInboxModal);
+  getEl('doc-inbox-cancel')?.addEventListener('click', closeInboxModal);
+  getEl('doc-inbox-save')?.addEventListener('click', () => {
+    submitInboxAttach().catch((err) => {
+      getEl('doc-inbox-err').textContent = err.message || 'Attach failed.';
+    });
+  });
+  getEl('doc-inbox-file')?.addEventListener('change', onInboxFilePicked);
 }
 
 export async function renderTabDocs(emp) {
@@ -71,8 +83,9 @@ export async function renderTabDocs(emp) {
       : '<div class="empty" style="padding:20px 0">No documents on file yet.</div>';
 
     const uploadToolbar = canWrite()
-      ? `<div class="file-toolbar" style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+      ? `<div class="file-toolbar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
         <button type="button" class="fab fab-upload" id="doc-open-upload">Upload document</button>
+        <button type="button" class="btn btn-sm btn-edit" id="doc-open-inbox">Attach from inbox</button>
       </div>`
       : '';
 
@@ -88,6 +101,11 @@ export async function renderTabDocs(emp) {
     );
 
     getEl('doc-open-upload')?.addEventListener('click', () => openUploadModal());
+    getEl('doc-open-inbox')?.addEventListener('click', () => {
+      openInboxModal().catch((err) => {
+        showToast(err.message || 'Failed to load inbox.', 'error');
+      });
+    });
 
     document.querySelectorAll('[data-rec-type]').forEach((btn) => {
       btn.addEventListener('click', () => openUploadModal(btn.dataset.recType));
@@ -173,7 +191,6 @@ function onFilePicked() {
   getEl('doc-file-meta').textContent = `${file.name} · ${formatFileSize(file.size)}`;
   const nameInput = getEl('doc-display-name');
   if (!nameInput.value.trim()) {
-    // Default display name without extension (user can rename)
     const base = file.name.includes('.')
       ? file.name.slice(0, file.name.lastIndexOf('.'))
       : file.name;
@@ -229,6 +246,145 @@ async function submitUpload() {
     btn.disabled = false;
     btn.textContent = 'Upload';
   }
+}
+
+async function openInboxModal(preselectTypeId = '') {
+  if (!_emp) return;
+
+  getEl('doc-inbox-err').textContent = '';
+  getEl('doc-inbox-issued').value = '';
+  getEl('doc-inbox-expiry').value = '';
+  getEl('doc-inbox-remarks').value = '';
+  getEl('doc-inbox-display').value = '';
+  getEl('doc-inbox-file-meta').textContent = '';
+  getEl('doc-inbox-employee-name').textContent =
+    `${_emp.firstName || ''} ${_emp.lastName || ''}`.trim() || 'this employee';
+
+  const [{ files }, { documentTypes }] = await Promise.all([
+    listScanInbox(),
+    _documentTypes.length
+      ? Promise.resolve({ documentTypes: _documentTypes })
+      : listDocumentTypes(),
+  ]);
+  if (documentTypes?.length) _documentTypes = documentTypes;
+
+  _inboxFiles = (files || []).filter((f) => !f.tooLarge);
+
+  const fileEl = getEl('doc-inbox-file');
+  if (!_inboxFiles.length) {
+    fileEl.innerHTML = '<option value="">No pending files in inbox</option>';
+    fileEl.disabled = true;
+    getEl('doc-inbox-file-meta').textContent =
+      'Drop scans into the Scan Inbox folder, then try again.';
+  } else {
+    fileEl.disabled = false;
+    fileEl.innerHTML =
+      '<option value="">Select a scanned file</option>' +
+      _inboxFiles
+        .map(
+          (f, i) =>
+            `<option value="${i}">${escapeHtml(f.name)} (${formatFileSize(f.size)})</option>`,
+        )
+        .join('');
+  }
+
+  const typeEl = getEl('doc-inbox-type');
+  typeEl.innerHTML =
+    '<option value="">Select type</option>' +
+    _documentTypes
+      .map(
+        (t) =>
+          `<option value="${t.id}">${escapeHtml(t.name)}${t.isRequired ? ' (recommended)' : ''}</option>`,
+      )
+      .join('');
+  if (preselectTypeId) typeEl.value = preselectTypeId;
+
+  getEl('doc-inbox-save').disabled = !_inboxFiles.length;
+  getEl('doc-inbox-overlay').classList.add('open');
+}
+
+function closeInboxModal() {
+  getEl('doc-inbox-overlay')?.classList.remove('open');
+  _inboxFiles = [];
+}
+
+function onInboxFilePicked() {
+  const idx = getEl('doc-inbox-file').value;
+  const file = idx === '' ? null : _inboxFiles[Number(idx)];
+  const meta = getEl('doc-inbox-file-meta');
+  const display = getEl('doc-inbox-display');
+  if (!file) {
+    meta.textContent = '';
+    return;
+  }
+  meta.textContent = `${formatFileSize(file.size)} · ${new Date(file.modifiedAt).toLocaleString('en-PH')}`;
+  if (!display.value.trim()) {
+    const name = file.name;
+    display.value = name.includes('.')
+      ? name.slice(0, name.lastIndexOf('.'))
+      : name;
+  }
+}
+
+async function submitInboxAttach() {
+  const errEl = getEl('doc-inbox-err');
+  const btn = getEl('doc-inbox-save');
+  errEl.textContent = '';
+
+  const idx = getEl('doc-inbox-file').value;
+  const file = idx === '' ? null : _inboxFiles[Number(idx)];
+  const displayName = getEl('doc-inbox-display').value.trim();
+  const documentTypeId = getEl('doc-inbox-type').value;
+  const issuedDate = getEl('doc-inbox-issued').value;
+  const expiryDate = getEl('doc-inbox-expiry').value;
+  const remarks = getEl('doc-inbox-remarks').value.trim();
+
+  if (!file?.name) {
+    errEl.textContent = 'Select an inbox file.';
+    return;
+  }
+  if (!displayName) {
+    errEl.textContent = 'Display name is required.';
+    return;
+  }
+  if (!documentTypeId) {
+    errEl.textContent = 'Document type is required.';
+    return;
+  }
+  if (issuedDate && expiryDate && expiryDate < issuedDate) {
+    errEl.textContent = 'Expiry date must be on or after issued date.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Attaching…';
+  try {
+    const result = await assignScanInboxFile(file.name, {
+      employeeId: _emp.id,
+      documentTypeId,
+      displayName,
+      issuedDate,
+      expiryDate,
+      remarks,
+    });
+    closeInboxModal();
+    showToast(`Attached as v${result.versionNumber || 1}.`, 'success');
+    updateScanInboxBadge();
+    await renderTabDocs(_emp);
+    refreshPanelHeader();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Attach to 201 File';
+  }
+}
+
+function updateScanInboxBadge() {
+  listScanInbox()
+    .then(({ files }) => {
+      const badge = document.getElementById('scan-inbox-badge');
+      if (badge) badge.textContent = String(files?.length ?? 0);
+    })
+    .catch(() => {});
 }
 
 function buildDocRow(doc) {

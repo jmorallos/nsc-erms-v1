@@ -131,15 +131,19 @@ employeesRouter.get('/', async (req, res, next) => {
       position: 'p.name',
       department: 'd.name',
       status: 'es.name',
+      startDate: 'ea.start_date',
+      createdAt: 'e.created_at',
     };
     const sortKey = String(req.query.sort || 'name');
     const sortExpr = SORT_MAP[sortKey] || SORT_MAP.name;
     const dir =
       String(req.query.dir || 'asc').toLowerCase() === 'desc' ? 'DESC' : 'ASC';
     // Apply ASC/DESC to each comma-separated key (name uses two columns)
+    const nulls =
+      sortKey === 'startDate' || sortKey === 'createdAt' ? ' NULLS LAST' : '';
     const orderBy = sortExpr
       .split(',')
-      .map((part) => `${part.trim()} ${dir}`)
+      .map((part) => `${part.trim()} ${dir}${nulls}`)
       .join(', ');
 
     const params = [];

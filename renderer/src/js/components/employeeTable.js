@@ -159,6 +159,9 @@ export async function renderEmployeeTable(searchQuery = '') {
 
 function buildEmployeeRow(emp, rowNumber) {
   const status = emp.assignment?.employmentStatusName || '—';
+  const startDate = emp.assignment?.startDate
+    ? String(emp.assignment.startDate).slice(0, 10)
+    : '—';
   return `
     <tr>
       <td style="color:var(--text-3);font-size:12px;font-family:'DM Mono',monospace;">${String(rowNumber).padStart(2, '0')}</td>
@@ -175,5 +178,6 @@ function buildEmployeeRow(emp, rowNumber) {
       <td style="font-weight:500;">${escapeHtml(emp.assignment?.positionName || '—')}</td>
       <td style="color:var(--text-2);">${escapeHtml(emp.assignment?.departmentName || '—')}</td>
       <td>${getStatusBadge(status)}</td>
+      <td style="color:var(--text-2);font-size:12.5px;font-variant-numeric:tabular-nums;">${escapeHtml(startDate)}</td>
     </tr>`;
 }
