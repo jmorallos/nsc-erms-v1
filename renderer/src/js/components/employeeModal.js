@@ -155,6 +155,7 @@ function resetPositionSelect() {
 async function saveEmployee() {
   const firstName = getEl('f-fname').value.trim();
   const lastName = getEl('f-lname').value.trim();
+  const employeeNo = getEl('f-emp-no').value.trim();
   const email = getEl('f-email').value.trim();
   const departmentId = getEl('f-dept').value;
   const departmentPositionId = getEl('f-position').value;
@@ -165,7 +166,6 @@ async function saveEmployee() {
   if (
     !firstName ||
     !lastName ||
-    !email ||
     !departmentId ||
     !departmentPositionId ||
     !employmentTypeId ||
@@ -179,6 +179,7 @@ async function saveEmployee() {
   const payload = {
     firstName,
     lastName,
+    employeeNo: employeeNo || null,
     email,
     contactNumber: getEl('f-contact').value.trim(),
     address: getEl('f-address').value.trim(),
@@ -214,7 +215,8 @@ async function saveEmployee() {
 async function prefillForm(emp) {
   getEl('f-fname').value = emp.firstName;
   getEl('f-lname').value = emp.lastName;
-  getEl('f-email').value = emp.email;
+  getEl('f-emp-no').value = emp.employeeNo ?? '';
+  getEl('f-email').value = emp.email ?? '';
   getEl('f-contact').value = emp.contactNumber ?? '';
   getEl('f-address').value = emp.address ?? '';
 
@@ -246,7 +248,7 @@ function clearForm() {
     URL.revokeObjectURL(_previewObjectUrl);
     _previewObjectUrl = null;
   }
-  ['f-fname', 'f-lname', 'f-email', 'f-contact', 'f-address'].forEach((id) => {
+  ['f-fname', 'f-lname', 'f-emp-no', 'f-email', 'f-contact', 'f-address'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });

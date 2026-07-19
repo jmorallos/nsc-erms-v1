@@ -99,7 +99,7 @@ function renderTabInfo(emp) {
     <div class="info-section">
       <h4>Personal Information</h4>
       <div class="info-row"><span class="ir-label">Full Name</span><span class="ir-val">${escapeHtml(emp.firstName)} ${escapeHtml(emp.lastName)}</span></div>
-      <div class="info-row"><span class="ir-label">Email</span><span class="ir-val">${escapeHtml(emp.email)}</span></div>
+      <div class="info-row"><span class="ir-label">Email</span><span class="ir-val">${escapeHtml(emp.email || '—')}</span></div>
       <div class="info-row"><span class="ir-label">Contact</span><span class="ir-val">${escapeHtml(emp.contactNumber || '—')}</span></div>
       <div class="info-row"><span class="ir-label">Address</span><span class="ir-val">${escapeHtml(emp.address || '—')}</span></div>
     </div>`,
@@ -154,7 +154,7 @@ async function renderTabEmployment(emp) {
       `
     <div class="info-section">
       <h4>Current employment</h4>
-      <div class="info-row"><span class="ir-label">Employee No</span><span class="ir-val" style="font-family:'DM Mono',monospace;">${escapeHtml(emp.employeeNo)}</span></div>
+      <div class="info-row"><span class="ir-label">Employee No</span><span class="ir-val" style="font-family:'DM Mono',monospace;">${escapeHtml(emp.employeeNo || '—')}</span></div>
       <div class="info-row"><span class="ir-label">Position</span><span class="ir-val">${escapeHtml(a?.positionName || '—')}</span></div>
       <div class="info-row"><span class="ir-label">Department</span><span class="ir-val">${escapeHtml(a?.departmentName || '—')}</span></div>
       <div class="info-row"><span class="ir-label">Employment type</span><span class="ir-val">${escapeHtml(a?.employmentTypeName || '—')}</span></div>
@@ -188,7 +188,7 @@ function renderPanelHeader(emp) {
     <div class="ph-pos">${escapeHtml(a?.positionName || 'No position')} &middot; ${escapeHtml(a?.departmentName || 'No Department')}</div>
     <div class="ph-badges">
       <span class="ph-badge">${escapeHtml(a?.employmentStatusName || '—')}</span>
-      <span class="ph-badge">${escapeHtml(emp.employeeNo)}</span>
+      <span class="ph-badge">${escapeHtml(emp.employeeNo || '—')}</span>
       ${a?.startDate ? `<span class="ph-badge">Since ${escapeHtml(String(a.startDate).slice(0, 10))}</span>` : ''}
     </div>
     <div class="ph-actions">

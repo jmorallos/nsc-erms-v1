@@ -121,7 +121,7 @@ async function openAssignModal(fileName) {
     employees
       .map(
         (e) =>
-          `<option value="${e.id}">${escapeHtml(e.lastName)}, ${escapeHtml(e.firstName)} (${escapeHtml(e.employeeNo)})</option>`,
+          `<option value="${e.id}">${escapeHtml(e.lastName)}, ${escapeHtml(e.firstName)}${e.employeeNo ? ` (${escapeHtml(e.employeeNo)})` : ''}</option>`,
       )
       .join('');
 

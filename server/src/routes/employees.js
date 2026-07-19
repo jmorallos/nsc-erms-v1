@@ -361,6 +361,8 @@ employeesRouter.post('/', writeRoles, async (req, res, next) => {
     const firstName = String(body.firstName || '').trim();
     const lastName = String(body.lastName || '').trim();
     const email = String(body.email || '').trim();
+    const employeeNoRaw = body.employeeNo == null ? '' : String(body.employeeNo).trim();
+    const employeeNo = employeeNoRaw || null;
     const contactNumber = String(body.contactNumber || '').trim();
     const address = String(body.address || '').trim();
     const departmentPositionId = String(body.departmentPositionId || '').trim();
@@ -368,8 +370,8 @@ employeesRouter.post('/', writeRoles, async (req, res, next) => {
     const employmentStatusId = String(body.employmentStatusId || '').trim();
     const startDate = String(body.startDate || '').trim();
 
-    if (!firstName || !lastName || !email) {
-      throw new HttpError(400, 'First name, last name, and email are required', 'VALIDATION');
+    if (!firstName || !lastName) {
+      throw new HttpError(400, 'First name and last name are required', 'VALIDATION');
     }
     if (!departmentPositionId || !employmentTypeId || !employmentStatusId || !startDate) {
       throw new HttpError(
@@ -383,9 +385,6 @@ employeesRouter.post('/', writeRoles, async (req, res, next) => {
       await client.query('BEGIN');
       try {
         const empId = ulid();
-        const employeeNo = body.employeeNo
-          ? String(body.employeeNo).trim()
-          : await nextEmployeeNo(client);
 
         await client.query(
           `INSERT INTO employees (
@@ -461,6 +460,8 @@ employeesRouter.patch('/:id', writeRoles, async (req, res, next) => {
     const firstName = String(body.firstName || '').trim();
     const lastName = String(body.lastName || '').trim();
     const email = String(body.email || '').trim();
+    const employeeNoRaw = body.employeeNo == null ? '' : String(body.employeeNo).trim();
+    const employeeNo = employeeNoRaw || null;
     const contactNumber = String(body.contactNumber || '').trim();
     const address = String(body.address || '').trim();
     const departmentPositionId = String(body.departmentPositionId || '').trim();
@@ -468,8 +469,8 @@ employeesRouter.patch('/:id', writeRoles, async (req, res, next) => {
     const employmentStatusId = String(body.employmentStatusId || '').trim();
     const startDate = String(body.startDate || '').trim();
 
-    if (!firstName || !lastName || !email) {
-      throw new HttpError(400, 'First name, last name, and email are required', 'VALIDATION');
+    if (!firstName || !lastName) {
+      throw new HttpError(400, 'First name and last name are required', 'VALIDATION');
     }
     if (!departmentPositionId || !employmentTypeId || !employmentStatusId || !startDate) {
       throw new HttpError(
@@ -490,12 +491,13 @@ employeesRouter.patch('/:id', writeRoles, async (req, res, next) => {
 
         await client.query(
           `UPDATE employees
-           SET first_name = $2, last_name = $3, email = $4,
-               contact_number = $5, address = $6,
-               updated_by = $7, updated_at = NOW()
+           SET employee_no = $2, first_name = $3, last_name = $4, email = $5,
+               contact_number = $6, address = $7,
+               updated_by = $8, updated_at = NOW()
            WHERE id = $1`,
           [
             req.params.id,
+            employeeNo,
             firstName,
             lastName,
             email,

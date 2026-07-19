@@ -170,7 +170,7 @@ function buildEmployeeRow(emp, rowNumber) {
           ${getAvatarHTML(emp, 34, 12)}
           <div>
             <div style="font-weight:700;color:var(--blue-900);letter-spacing:-.2px;">${escapeHtml(emp.firstName)} ${escapeHtml(emp.lastName)}</div>
-            <div style="font-size:0.7857rem;color:var(--text-3);">${escapeHtml(emp.email)}</div>
+            <div style="font-size:0.7857rem;color:var(--text-3);">${escapeHtml(emp.email || '—')}</div>
           </div>
         </div>
       </td>
