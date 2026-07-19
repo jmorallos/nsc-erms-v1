@@ -72,3 +72,21 @@ export async function removeStoredFile(relativePath) {
   fs.unlinkSync(abs);
   return true;
 }
+
+/**
+ * Remove an employee's storage directory (photo + documents folder).
+ * Safe if the directory is missing.
+ */
+export async function removeEmployeeStorage(employeeId) {
+  if (!employeeId) return false;
+  const root = await getFilesRoot();
+  const dir = path.join(root, 'employees', String(employeeId));
+  const rootAbs = path.resolve(root);
+  const dirAbs = path.resolve(dir);
+  if (!dirAbs.startsWith(rootAbs + path.sep) && dirAbs !== rootAbs) {
+    throw new Error('Invalid employee storage path');
+  }
+  if (!fs.existsSync(dirAbs)) return false;
+  fs.rmSync(dirAbs, { recursive: true, force: true });
+  return true;
+}

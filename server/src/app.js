@@ -21,6 +21,7 @@ import { documentsRouter, documentItemRouter } from './routes/documents.js';
 import { scanInboxRouter } from './routes/scanInbox.js';
 import { backupsRouter } from './routes/backups.js';
 import { auditRouter } from './routes/audit.js';
+import { eventsRouter } from './routes/events.js';
 
 const PgSession = connectPgSimple(session);
 
@@ -83,6 +84,7 @@ export function createApp() {
   app.use('/api/v1/backups', backupsRouter);
   app.use('/api/v1/audit-logs', auditRouter);
   app.use('/api/v1/users', usersRouter);
+  app.use('/api/v1/events', eventsRouter);
 
   // Prefer renderer/dist (Vite build); falls back to renderer/ when dist is missing
   app.use(express.static(config.clientDist, { index: false }));

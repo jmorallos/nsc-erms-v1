@@ -9,8 +9,11 @@ import { getFilesRoot, getMaxUploadBytes } from '../services/settings.js';
 import {
   absoluteFromRelative,
   writeEmployeePhoto,
+  removeStoredFile,
+  removeEmployeeStorage,
 } from '../services/files.js';
 import { writeAudit, clientIp } from '../services/audit.js';
+import { publish } from '../services/liveEvents.js';
 
 export const employeesRouter = Router();
 
@@ -242,6 +245,65 @@ employeesRouter.get('/', async (req, res, next) => {
   }
 });
 
+/** Soft-deleted employees — Archived Employees page */
+employeesRouter.get('/trash', async (req, res, next) => {
+  try {
+    const wantAll = String(req.query.all || '') === '1' || String(req.query.all || '') === 'true';
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limitRaw = Number(req.query.limit);
+    const limit = wantAll
+      ? null
+      : Math.min(100, Math.max(1, Number.isFinite(limitRaw) ? limitRaw : 25));
+
+    const { rows: countRows } = await query(
+      `SELECT COUNT(*)::int AS total FROM employees WHERE deleted_at IS NOT NULL`,
+    );
+    const total = countRows[0]?.total ?? 0;
+
+    let sql = `
+      SELECT e.id, e.employee_no, e.first_name, e.last_name, e.email,
+             e.profile_picture_path, e.deleted_at, e.is_archived,
+             (SELECT COUNT(*)::int FROM documents d WHERE d.employee_id = e.id) AS document_count
+      FROM employees e
+      WHERE e.deleted_at IS NOT NULL
+      ORDER BY e.deleted_at DESC`;
+    const params = [];
+    let totalPages = 1;
+    let pageOut = 1;
+    if (limit != null) {
+      totalPages = Math.max(1, Math.ceil(total / limit));
+      pageOut = Math.min(page, totalPages);
+      const offset = (pageOut - 1) * limit;
+      params.push(limit, offset);
+      sql += ` LIMIT $1 OFFSET $2`;
+    }
+
+    const { rows } = await query(sql, params);
+    res.json({
+      employees: rows.map((row) => ({
+        id: row.id,
+        employeeNo: row.employee_no,
+        firstName: row.first_name,
+        lastName: row.last_name,
+        email: row.email,
+        isArchived: row.is_archived,
+        deletedAt: row.deleted_at,
+        profilePicturePath: row.profile_picture_path,
+        photoUrl: row.profile_picture_path
+          ? `/api/v1/employees/${row.id}/photo`
+          : null,
+        documentCount: row.document_count ?? 0,
+      })),
+      page: pageOut,
+      limit: limit ?? total,
+      total,
+      totalPages: limit == null ? 1 : totalPages,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 employeesRouter.get('/:id/assignments', async (req, res, next) => {
   try {
     const { rows: emp } = await query(
@@ -376,6 +438,11 @@ employeesRouter.post('/', writeRoles, async (req, res, next) => {
     });
 
     const row = await getEmployeeRow(employee);
+    publish('employees.changed', {
+      action: 'created',
+      employeeId: employee,
+      actorUserId: req.session.userId,
+    });
     res.status(201).json({ employee: mapEmployee(row) });
   } catch (err) {
     if (err.code === '23505') {
@@ -496,6 +563,11 @@ employeesRouter.patch('/:id', writeRoles, async (req, res, next) => {
     });
 
     const row = await getEmployeeRow(req.params.id);
+    publish('employees.changed', {
+      action: 'updated',
+      employeeId: req.params.id,
+      actorUserId: req.session.userId,
+    });
     res.json({ employee: mapEmployee(row) });
   } catch (err) {
     if (err.code === '23503') {
@@ -507,21 +579,35 @@ employeesRouter.patch('/:id', writeRoles, async (req, res, next) => {
 
 employeesRouter.delete('/:id', writeRoles, async (req, res, next) => {
   try {
-    const { rows } = await query(
-      `UPDATE employees
-       SET deleted_at = NOW(), is_archived = TRUE, updated_at = NOW(), updated_by = $2
-       WHERE id = $1 AND deleted_at IS NULL
-       RETURNING id`,
-      [req.params.id, req.session.userId],
-    );
-    if (!rows[0]) throw new HttpError(404, 'Employee not found', 'NOT_FOUND');
+    await withClient(async (client) => {
+      await client.query('BEGIN');
+      try {
+        const { rows } = await client.query(
+          `UPDATE employees
+           SET deleted_at = NOW(), is_archived = TRUE, updated_at = NOW(), updated_by = $2
+           WHERE id = $1 AND deleted_at IS NULL
+           RETURNING id`,
+          [req.params.id, req.session.userId],
+        );
+        if (!rows[0]) throw new HttpError(404, 'Employee not found', 'NOT_FOUND');
 
-    await query(
-      `UPDATE employee_assignments
-       SET is_active = FALSE, end_date = COALESCE(end_date, CURRENT_DATE), updated_at = NOW()
-       WHERE employee_id = $1 AND is_active = TRUE`,
-      [req.params.id],
-    );
+        // End open assignments without violating end_date >= start_date
+        // (future-dated starts must not get an earlier CURRENT_DATE end_date).
+        await client.query(
+          `UPDATE employee_assignments
+           SET is_active = FALSE,
+               end_date = COALESCE(end_date, GREATEST(start_date, CURRENT_DATE)),
+               updated_at = NOW()
+           WHERE employee_id = $1 AND is_active = TRUE`,
+          [req.params.id],
+        );
+
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      }
+    });
 
     await writeAudit({
       actorUserId: req.session.userId,
@@ -531,7 +617,141 @@ employeesRouter.delete('/:id', writeRoles, async (req, res, next) => {
       ip: clientIp(req),
     });
 
+    publish('employees.changed', {
+      action: 'deleted',
+      employeeId: req.params.id,
+      actorUserId: req.session.userId,
+    });
     res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+employeesRouter.post('/:id/restore', writeRoles, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `UPDATE employees
+       SET deleted_at = NULL, is_archived = FALSE, updated_at = NOW(), updated_by = $2
+       WHERE id = $1 AND deleted_at IS NOT NULL
+       RETURNING id, employee_no, first_name, last_name`,
+      [req.params.id, req.session.userId],
+    );
+    if (!rows[0]) {
+      throw new HttpError(404, 'Archived employee not found', 'NOT_FOUND');
+    }
+
+    await writeAudit({
+      actorUserId: req.session.userId,
+      action: 'employee.restore',
+      entityType: 'employee',
+      entityId: rows[0].id,
+      meta: {
+        employeeNo: rows[0].employee_no,
+        name: `${rows[0].first_name} ${rows[0].last_name}`,
+      },
+      ip: clientIp(req),
+    });
+
+    publish('employees.changed', {
+      action: 'restored',
+      employeeId: rows[0].id,
+      actorUserId: req.session.userId,
+    });
+
+    res.json({ ok: true, id: rows[0].id });
+  } catch (err) {
+    next(err);
+  }
+});
+
+employeesRouter.delete('/:id/permanent', writeRoles, async (req, res, next) => {
+  try {
+    const { rows: empRows } = await query(
+      `SELECT id, employee_no, first_name, last_name, profile_picture_path
+       FROM employees
+       WHERE id = $1 AND deleted_at IS NOT NULL`,
+      [req.params.id],
+    );
+    if (!empRows[0]) {
+      throw new HttpError(404, 'Archived employee not found', 'NOT_FOUND');
+    }
+    const emp = empRows[0];
+
+    const { rows: docs } = await query(
+      `SELECT id, file_path FROM documents WHERE employee_id = $1`,
+      [emp.id],
+    );
+
+    let fileRemovedCount = 0;
+    for (const doc of docs) {
+      try {
+        if (await removeStoredFile(doc.file_path)) fileRemovedCount += 1;
+      } catch (err) {
+        console.error('Failed to remove document file:', err.message);
+      }
+    }
+
+    let photoRemoved = false;
+    try {
+      if (emp.profile_picture_path) {
+        photoRemoved = await removeStoredFile(emp.profile_picture_path);
+      }
+    } catch (err) {
+      console.error('Failed to remove employee photo:', err.message);
+    }
+
+    await withClient(async (client) => {
+      await client.query('BEGIN');
+      try {
+        await client.query(`DELETE FROM documents WHERE employee_id = $1`, [emp.id]);
+        await client.query(`DELETE FROM employee_assignments WHERE employee_id = $1`, [
+          emp.id,
+        ]);
+        await client.query(`DELETE FROM employees WHERE id = $1`, [emp.id]);
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      }
+    });
+
+    let storageRemoved = false;
+    try {
+      storageRemoved = await removeEmployeeStorage(emp.id);
+    } catch (err) {
+      console.error('Failed to remove employee storage dir:', err.message);
+    }
+
+    await writeAudit({
+      actorUserId: req.session.userId,
+      action: 'employee.permanent_delete',
+      entityType: 'employee',
+      entityId: emp.id,
+      meta: {
+        employeeNo: emp.employee_no,
+        name: `${emp.first_name} ${emp.last_name}`,
+        documentsPurged: docs.length,
+        fileRemovedCount,
+        photoRemoved,
+        storageRemoved,
+      },
+      ip: clientIp(req),
+    });
+
+    publish('employees.changed', {
+      action: 'purged',
+      employeeId: emp.id,
+      actorUserId: req.session.userId,
+    });
+
+    res.json({
+      ok: true,
+      documentsPurged: docs.length,
+      fileRemovedCount,
+      photoRemoved,
+      storageRemoved,
+    });
   } catch (err) {
     next(err);
   }
@@ -586,6 +806,11 @@ employeesRouter.post('/:id/photo', writeRoles, async (req, res, next) => {
           ip: clientIp(req),
         });
 
+        publish('employees.changed', {
+          action: 'photo',
+          employeeId: req.params.id,
+          actorUserId: req.session.userId,
+        });
         res.json({
           employeeId: rows[0].id,
           profilePicturePath: rows[0].profile_picture_path,
@@ -602,8 +827,9 @@ employeesRouter.post('/:id/photo', writeRoles, async (req, res, next) => {
 
 employeesRouter.get('/:id/photo', async (req, res, next) => {
   try {
+    // Allow photo for soft-deleted (Archived Employees preview)
     const { rows } = await query(
-      `SELECT profile_picture_path FROM employees WHERE id = $1 AND deleted_at IS NULL`,
+      `SELECT profile_picture_path FROM employees WHERE id = $1`,
       [req.params.id],
     );
     const pathRel = rows[0]?.profile_picture_path;
@@ -611,7 +837,16 @@ employeesRouter.get('/:id/photo', async (req, res, next) => {
 
     const root = await getFilesRoot();
     const abs = absoluteFromRelative(root, pathRel);
-    if (!fs.existsSync(abs)) throw new HttpError(404, 'Photo missing on disk', 'NOT_FOUND');
+    if (!fs.existsSync(abs)) {
+      // Heal orphaned DB path so clients stop requesting a missing file
+      await query(
+        `UPDATE employees
+         SET profile_picture_path = NULL, updated_at = NOW()
+         WHERE id = $1 AND profile_picture_path IS NOT NULL`,
+        [req.params.id],
+      );
+      throw new HttpError(404, 'Photo missing on disk', 'NOT_FOUND');
+    }
     res.sendFile(abs);
   } catch (err) {
     next(err);

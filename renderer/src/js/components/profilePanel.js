@@ -1,10 +1,11 @@
-import { getEmployee, deleteEmployee, listEmployeeAssignments } from '../api/employees.js';
+import { getEmployee, deleteEmployee, restoreEmployee, listEmployeeAssignments } from '../api/employees.js';
 import { ApiError } from '../api/client.js';
 import { getEl, setHTML, getInitials, getStatusBadge, getYearsOfService, escapeHtml } from '../utils/helpers.js';
 import { showToast } from '../utils/toast.js';
 import { renderEmployeeTable } from './employeeTable.js';
 import { openEmployeeModal } from './employeeModal.js';
 import { renderTabDocs } from './documents.js';
+import { renderArchivedEmployeesPage } from './archivedEmployees.js';
 import { canWrite } from '../utils/authz.js';
 
 let _panelEmpId = null;
@@ -37,6 +38,34 @@ export function closeProfilePanel() {
   getEl('panel').classList.remove('open');
   getEl('panel-backdrop').classList.remove('open');
   _panelEmpId = null;
+}
+
+export function getOpenProfileEmployeeId() {
+  return _panelEmpId;
+}
+
+/** Live-sync: refresh open profile when the viewed employee changes. */
+export async function refreshOpenProfileForLiveSync(payload = {}) {
+  if (_panelEmpId == null) return;
+  const empId = payload.employeeId;
+  if (empId && String(empId) !== String(_panelEmpId)) return;
+
+  const action = payload.action;
+  if (action === 'deleted' || action === 'purged') {
+    closeProfilePanel();
+    return;
+  }
+
+  try {
+    const { employee } = await getEmployee(_panelEmpId);
+    renderPanelHeader(employee);
+    const activeTab = document.querySelector('.tab-btn.active')?.dataset?.tab;
+    if (activeTab === 'info') renderTabInfo(employee);
+    if (activeTab === 'employment') await renderTabEmployment(employee);
+    if (activeTab === 'docs') await renderTabDocs(employee);
+  } catch {
+    closeProfilePanel();
+  }
 }
 
 export async function refreshPanelHeader() {
@@ -147,7 +176,7 @@ function renderPanelHeader(emp) {
   const a = emp.assignment;
   const pic =
     emp.photoUrl || emp.profilePicturePath
-      ? `<img src="${emp.photoUrl || `/api/v1/employees/${emp.id}/photo`}" class="ph-avatar-lg" alt=""/>`
+      ? `<img src="${emp.photoUrl || `/api/v1/employees/${emp.id}/photo`}" class="ph-avatar-lg" alt="" onerror="this.onerror=null;this.outerHTML='<div class=&quot;ph-ini-lg&quot;>${escapeHtml(getInitials(emp.firstName, emp.lastName))}</div>';"/>`
       : `<div class="ph-ini-lg">${getInitials(emp.firstName, emp.lastName)}</div>`;
 
   setHTML(
@@ -185,12 +214,26 @@ function activateTab(name) {
 }
 
 async function handleDeleteEmployee(empId) {
-  if (!confirm('Delete this employee? This cannot be undone.')) return;
+  if (!confirm('Move this employee to Archived Employees?')) return;
   try {
     await deleteEmployee(empId);
     closeProfilePanel();
     await renderEmployeeTable(_getSearchQuery());
-    showToast('Employee deleted.', 'success');
+    renderArchivedEmployeesPage().catch(() => {});
+    showToast('Moved to Archived Employees.', 'info', {
+      actionLabel: 'Undo',
+      duration: 8000,
+      onAction: async () => {
+        try {
+          await restoreEmployee(empId);
+          showToast('Employee restored.', 'success');
+          await renderEmployeeTable(_getSearchQuery());
+          renderArchivedEmployeesPage().catch(() => {});
+        } catch (err) {
+          showToast(err instanceof ApiError ? err.message : 'Restore failed.', 'error');
+        }
+      },
+    });
   } catch (err) {
     showToast(err instanceof ApiError ? err.message : 'Delete failed.', 'error');
   }

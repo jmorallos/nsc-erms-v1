@@ -12,6 +12,7 @@ import {
   removeStoredFile,
 } from '../services/files.js';
 import { writeAudit, clientIp } from '../services/audit.js';
+import { publish } from '../services/liveEvents.js';
 
 export const documentsRouter = Router({ mergeParams: true });
 
@@ -235,6 +236,13 @@ documentsRouter.post('/', writeRoles, async (req, res, next) => {
           ip: clientIp(req),
         });
 
+        publish('documents.changed', {
+          action: 'uploaded',
+          documentId,
+          employeeId,
+          actorUserId: req.session.userId,
+        });
+
         res.status(201).json({ document: mapDoc(joined[0]) });
       } catch (e) {
         next(e);
@@ -332,7 +340,7 @@ documentItemRouter.delete('/:id', writeRoles, async (req, res, next) => {
       `UPDATE documents
        SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2
        WHERE id = $1 AND deleted_at IS NULL
-       RETURNING id, file_name`,
+       RETURNING id, file_name, employee_id`,
       [req.params.id, req.session.userId],
     );
     if (!rows[0]) throw new HttpError(404, 'Document not found', 'NOT_FOUND');
@@ -344,6 +352,13 @@ documentItemRouter.delete('/:id', writeRoles, async (req, res, next) => {
       entityId: rows[0].id,
       meta: { fileName: rows[0].file_name },
       ip: clientIp(req),
+    });
+
+    publish('documents.changed', {
+      action: 'trashed',
+      documentId: rows[0].id,
+      employeeId: rows[0].employee_id,
+      actorUserId: req.session.userId,
     });
 
     res.json({
@@ -377,6 +392,13 @@ documentItemRouter.post('/:id/restore', writeRoles, async (req, res, next) => {
       ip: clientIp(req),
     });
 
+    publish('documents.changed', {
+      action: 'restored',
+      documentId: rows[0].id,
+      employeeId: rows[0].employee_id,
+      actorUserId: req.session.userId,
+    });
+
     res.json({
       ok: true,
       id: rows[0].id,
@@ -392,7 +414,7 @@ documentItemRouter.post('/:id/restore', writeRoles, async (req, res, next) => {
 documentItemRouter.delete('/:id/permanent', writeRoles, async (req, res, next) => {
   try {
     const { rows } = await query(
-      `SELECT id, file_path FROM documents WHERE id = $1 AND deleted_at IS NOT NULL`,
+      `SELECT id, file_path, employee_id FROM documents WHERE id = $1 AND deleted_at IS NOT NULL`,
       [req.params.id],
     );
     if (!rows[0]) {
@@ -413,8 +435,15 @@ documentItemRouter.delete('/:id/permanent', writeRoles, async (req, res, next) =
       action: 'document.permanent_delete',
       entityType: 'document',
       entityId: req.params.id,
-      meta: { fileRemoved },
+      meta: { fileRemoved, employeeId: rows[0].employee_id },
       ip: clientIp(req),
+    });
+
+    publish('documents.changed', {
+      action: 'purged',
+      documentId: req.params.id,
+      employeeId: rows[0].employee_id,
+      actorUserId: req.session.userId,
     });
 
     res.json({ ok: true, fileRemoved });

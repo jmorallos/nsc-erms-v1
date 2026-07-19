@@ -12,7 +12,7 @@ import {
 } from '../api/departments.js';
 import { uploadEmployeePhoto, employeePhotoUrl } from '../api/documents.js';
 import { ApiError } from '../api/client.js';
-import { getEl, getInitials, getToday } from '../utils/helpers.js';
+import { getEl, getInitials, getToday, escapeHtml } from '../utils/helpers.js';
 import { showToast } from '../utils/toast.js';
 import { renderEmployeeTable, refreshFilterDropdowns } from './employeeTable.js';
 
@@ -232,8 +232,9 @@ async function prefillForm(emp) {
 
   const prevEl = getEl('pic-preview');
   if (emp.photoUrl || emp.profilePicturePath) {
+    const initials = escapeHtml(getInitials(emp.firstName, emp.lastName));
     prevEl.outerHTML =
-      `<img id="pic-preview" src="${emp.photoUrl || employeePhotoUrl(emp.id)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2.5px solid var(--blue-500);" alt=""/>`;
+      `<img id="pic-preview" src="${emp.photoUrl || employeePhotoUrl(emp.id)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2.5px solid var(--blue-500);" alt="" onerror="this.onerror=null;this.outerHTML='<div id=&quot;pic-preview&quot; class=&quot;pic-ini&quot;>${initials}</div>';"/>`;
   } else {
     prevEl.outerHTML = `<div id="pic-preview" class="pic-ini">${getInitials(emp.firstName, emp.lastName)}</div>`;
   }

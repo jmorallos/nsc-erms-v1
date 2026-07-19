@@ -33,3 +33,20 @@ export function updateEmployee(id, data) {
 export function deleteEmployee(id) {
   return api(`/employees/${id}`, { method: 'DELETE' });
 }
+
+export function listArchivedEmployees(params = {}) {
+  const qs = new URLSearchParams();
+  if (params.all) qs.set('all', '1');
+  if (params.page) qs.set('page', String(params.page));
+  if (params.limit) qs.set('limit', String(params.limit));
+  const query = qs.toString();
+  return api(`/employees/trash${query ? `?${query}` : ''}`);
+}
+
+export function restoreEmployee(id) {
+  return api(`/employees/${id}/restore`, { method: 'POST', body: '{}' });
+}
+
+export function permanentDeleteEmployee(id) {
+  return api(`/employees/${id}/permanent`, { method: 'DELETE' });
+}

@@ -10,6 +10,7 @@ import {
   ensureInboxDirs,
 } from '../services/scanInbox.js';
 import { writeAudit, clientIp } from '../services/audit.js';
+import { publish } from '../services/liveEvents.js';
 
 export const scanInboxRouter = Router();
 
@@ -40,6 +41,11 @@ scanInboxRouter.post('/:fileName/reject', writeRoles, async (req, res, next) => 
       entityId: fileName,
       meta: { reason },
       ip: clientIp(req),
+    });
+
+    publish('scan.changed', {
+      action: 'rejected',
+      actorUserId: req.session.userId,
     });
 
     res.json({ ok: true });
@@ -156,6 +162,19 @@ scanInboxRouter.post('/:fileName/assign', writeRoles, async (req, res, next) => 
       entityId: rows[0].id,
       meta: { employeeId, documentTypeId, sourceFile: fileName, versionNumber },
       ip: clientIp(req),
+    });
+
+    publish('scan.changed', {
+      action: 'assigned',
+      employeeId,
+      documentId: rows[0].id,
+      actorUserId: req.session.userId,
+    });
+    publish('documents.changed', {
+      action: 'uploaded',
+      documentId: rows[0].id,
+      employeeId,
+      actorUserId: req.session.userId,
     });
 
     res.status(201).json({

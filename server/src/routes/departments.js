@@ -4,6 +4,7 @@ import { query, withClient } from '../db/pool.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
 import { writeAudit, clientIp } from '../services/audit.js';
+import { publish } from '../services/liveEvents.js';
 
 export const departmentsRouter = Router();
 
@@ -173,6 +174,12 @@ departmentsRouter.post('/', writeRoles, async (req, res, next) => {
       ip: clientIp(req),
     });
 
+    publish('departments.changed', {
+      action: 'created',
+      departmentId: id,
+      actorUserId: req.session.userId,
+    });
+
     const positions = await loadDepartmentPositions(id);
     res.status(201).json({
       department: {
@@ -234,6 +241,12 @@ departmentsRouter.patch('/:id', writeRoles, async (req, res, next) => {
         positionIds: hasPositionIds ? req.body.positionIds : undefined,
       },
       ip: clientIp(req),
+    });
+
+    publish('departments.changed', {
+      action: 'updated',
+      departmentId: req.params.id,
+      actorUserId: req.session.userId,
     });
 
     const { rows } = await query(
@@ -308,6 +321,12 @@ departmentsRouter.delete('/:id', writeRoles, async (req, res, next) => {
       entityType: 'department',
       entityId: req.params.id,
       ip: clientIp(req),
+    });
+
+    publish('departments.changed', {
+      action: 'deleted',
+      departmentId: req.params.id,
+      actorUserId: req.session.userId,
     });
 
     res.json({ ok: true });

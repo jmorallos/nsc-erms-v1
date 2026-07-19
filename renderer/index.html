@@ -120,6 +120,15 @@
                     Trash
                     <span class="nav-badge" id="trash-badge">0</span>
                 </a>
+                <a data-page="archived-employees">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 8v13H3V8" />
+                        <path d="M1 3h22v5H1z" />
+                        <path d="M10 12h4" />
+                    </svg>
+                    Archived Employees
+                    <span class="nav-badge" id="archived-employees-badge">0</span>
+                </a>
                 <div class="nav-section-label">Tools</div>
                 <a data-page="backup">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -308,6 +317,26 @@
                     </div>
                 </div>
 
+                <!-- Archived Employees Page -->
+                <div id="page-archived-employees" class="page">
+                    <div class="toolbar" style="justify-content:space-between;align-items:flex-start;">
+                        <div>
+                            <p style="font-size:0.9286rem;color:var(--text-2);margin:0 0 4px;">
+                                Soft-deleted employees. Restore to put them back on the Employees list, or delete forever to remove records and files.
+                            </p>
+                        </div>
+                        <button type="button" id="archived-employees-refresh" class="btn btn-sm btn-edit">Refresh</button>
+                    </div>
+                    <div class="card" style="padding:8px 14px;">
+                        <div class="bk-list" id="archived-employees-list"></div>
+                        <div class="pager" id="archived-employees-pager">
+                            <button type="button" class="btn btn-sm btn-edit" id="archived-employees-prev">Prev</button>
+                            <span class="pager-info" id="archived-employees-page-info">—</span>
+                            <button type="button" class="btn btn-sm btn-edit" id="archived-employees-next">Next</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Backup Page -->
                 <div id="page-backup" class="page">
                     <div class="backup-grid">
@@ -483,6 +512,8 @@
                                     <option value="employee.create">Employee create</option>
                                     <option value="employee.update">Employee update</option>
                                     <option value="employee.delete">Employee delete</option>
+                                    <option value="employee.restore">Employee restore</option>
+                                    <option value="employee.permanent_delete">Employee permanent delete</option>
                                     <option value="document.upload">Document upload</option>
                                     <option value="document.soft_delete">Document trash</option>
                                     <option value="document.restore">Document restore</option>

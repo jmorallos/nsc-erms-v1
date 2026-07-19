@@ -19,10 +19,14 @@ import {
   resetEmployeePage,
 } from './js/components/employeeTable.js';
 import { initEmployeeModal } from './js/components/employeeModal.js';
-import { initProfilePanel, closeProfilePanel } from './js/components/profilePanel.js';
-import { initDocuments } from './js/components/documents.js';
+import { initProfilePanel, closeProfilePanel, refreshOpenProfileForLiveSync } from './js/components/profilePanel.js';
+import { initDocuments, refreshOpenDocsTabForLiveSync } from './js/components/documents.js';
 import { initScanInbox, renderScanInboxPage } from './js/components/scanInbox.js';
 import { initTrash, renderTrashPage } from './js/components/trash.js';
+import {
+  initArchivedEmployees,
+  renderArchivedEmployeesPage,
+} from './js/components/archivedEmployees.js';
 import {
   initDepartments as initDepartmentComponent,
   renderDepartmentPage,
@@ -32,6 +36,7 @@ import { initBackup, renderBackupPage } from './js/components/backup.js';
 import { initSettings, renderSettingsPage } from './js/components/settings.js';
 import { initExport } from './js/components/export.js';
 import { setCurrentRole, clearCurrentRole } from './js/utils/authz.js';
+import { startLiveSync, stopLiveSync } from './js/utils/liveSync.js';
 
 const FONT_SIZES = [13, 14, 17, 21];
 
@@ -47,6 +52,7 @@ const App = {
   currentUser: null,
   setupCompleted: false,
   searchQuery: '',
+  currentPage: 'employees',
   prefs: { darkMode: false, fontSize: 14 },
   savePrefs() {
     localStorage.setItem('nsc_erms_prefs', JSON.stringify(App.prefs));
@@ -76,6 +82,7 @@ const ROUTE_PAGES = [
   'positions',
   'scan-inbox',
   'trash',
+  'archived-employees',
   'backup',
   'export',
   'settings',
@@ -96,6 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initDocuments();
   initScanInbox();
   initTrash();
+  initArchivedEmployees();
   initDepartmentComponent();
   initPositions();
   initBackup();
@@ -180,11 +188,47 @@ async function showAppShell(user) {
     user.name.split(' ')[1] ?? '',
   );
   App.applyPrefs();
+  startLiveSync({
+    'employees.changed': (payload) => {
+      // Badge + list surfaces
+      renderArchivedEmployeesPage().catch(() => {});
+      if (App.currentPage === 'employees') {
+        renderEmployeeTable(App.searchQuery).catch(() => {});
+      }
+      refreshOpenProfileForLiveSync(payload).catch(() => {});
+    },
+    'documents.changed': (payload) => {
+      renderTrashPage().catch(() => {});
+      refreshOpenDocsTabForLiveSync(payload).catch(() => {});
+    },
+    'scan.changed': () => {
+      renderScanInboxPage().catch(() => {});
+    },
+    'departments.changed': () => {
+      refreshFilterDropdowns().catch(() => {});
+      if (App.currentPage === 'departments') {
+        renderDepartmentPage();
+      }
+      if (App.currentPage === 'employees') {
+        renderEmployeeTable(App.searchQuery).catch(() => {});
+      }
+    },
+    'positions.changed': () => {
+      refreshFilterDropdowns().catch(() => {});
+      if (App.currentPage === 'positions') {
+        renderPositionsPage().catch(() => {});
+      }
+      if (App.currentPage === 'departments') {
+        renderDepartmentPage();
+      }
+    },
+  });
   try {
     await refreshFilterDropdowns();
     await renderEmployeeTable();
     await renderScanInboxPage();
     await renderTrashPage();
+    await renderArchivedEmployeesPage();
     applyRouteFromHash();
   } catch (err) {
     showToast(err instanceof ApiError ? err.message : 'Failed to load employees.', 'error');
@@ -257,6 +301,7 @@ function navTo(pageName, linkEl, updateHash = true) {
     location.hash = pageName;
   }
 
+  App.currentPage = pageName;
   document.querySelectorAll('#sidebar-nav a').forEach((a) => a.classList.remove('active'));
   linkEl.classList.add('active');
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
@@ -275,6 +320,7 @@ function navTo(pageName, linkEl, updateHash = true) {
   if (pageName === 'positions') renderPositionsPage().catch(() => {});
   if (pageName === 'scan-inbox') renderScanInboxPage().catch(() => {});
   if (pageName === 'trash') renderTrashPage().catch(() => {});
+  if (pageName === 'archived-employees') renderArchivedEmployeesPage().catch(() => {});
   if (pageName === 'backup') renderBackupPage();
   if (pageName === 'settings') renderSettingsPage();
   if (pageName === 'employees') {
@@ -307,6 +353,7 @@ async function handleLogout() {
   try {
     await apiLogout();
   } catch { /* clear local anyway */ }
+  stopLiveSync();
   App.currentUser = null;
   clearCurrentRole();
   closeProfilePanel();

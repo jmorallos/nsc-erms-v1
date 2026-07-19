@@ -4,6 +4,7 @@ import { query } from '../db/pool.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
 import { writeAudit, clientIp } from '../services/audit.js';
+import { publish } from '../services/liveEvents.js';
 
 export const positionsRouter = Router();
 
@@ -68,6 +69,12 @@ positionsRouter.post('/', writeRoles, async (req, res, next) => {
         ip: clientIp(req),
       });
 
+      publish('positions.changed', {
+        action: 'created',
+        positionId: id,
+        actorUserId: req.session.userId,
+      });
+
       res.status(201).json({
         position: {
           id: rows[0].id,
@@ -101,6 +108,11 @@ positionsRouter.post('/', writeRoles, async (req, res, next) => {
             entityId: rows[0].id,
             meta: { name },
             ip: clientIp(req),
+          });
+          publish('positions.changed', {
+            action: 'reactivated',
+            positionId: rows[0].id,
+            actorUserId: req.session.userId,
           });
           return res.status(200).json({
             position: {
@@ -148,6 +160,12 @@ positionsRouter.patch('/:id', writeRoles, async (req, res, next) => {
       entityId: req.params.id,
       meta: { name },
       ip: clientIp(req),
+    });
+
+    publish('positions.changed', {
+      action: 'updated',
+      positionId: req.params.id,
+      actorUserId: req.session.userId,
     });
 
     res.json({
@@ -212,6 +230,12 @@ positionsRouter.delete('/:id', writeRoles, async (req, res, next) => {
       entityId: req.params.id,
       meta: { name: rows[0].name },
       ip: clientIp(req),
+    });
+
+    publish('positions.changed', {
+      action: 'deleted',
+      positionId: req.params.id,
+      actorUserId: req.session.userId,
     });
 
     res.json({ ok: true });

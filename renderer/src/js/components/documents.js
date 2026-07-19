@@ -11,6 +11,7 @@ import { getEl, setHTML, escapeHtml, formatFileSize } from '../utils/helpers.js'
 import { printDocument } from '../utils/printDocument.js';
 import { showToast } from '../utils/toast.js';
 import { refreshPanelHeader } from './profilePanel.js';
+import { renderTrashPage } from './trash.js';
 import { canWrite } from '../utils/authz.js';
 
 let _emp = null;
@@ -104,6 +105,29 @@ function isAllowedDocFile(file) {
   if (ALLOWED_DOC_EXT.test(file.name || '')) return true;
   if (file.type && ALLOWED_DOC_MIMES.has(file.type)) return true;
   return false;
+}
+
+/**
+ * Live-sync: refresh the open 201 File tab when documents change for that employee.
+ * @param {{ employeeId?: string }} [payload]
+ */
+export async function refreshOpenDocsTabForLiveSync(payload = {}) {
+  if (!_emp?.id) return;
+  const empId = payload.employeeId;
+  if (empId && String(empId) !== String(_emp.id)) return;
+
+  const panel = document.getElementById('panel');
+  const tab = document.getElementById('tab-docs');
+  if (!panel?.classList.contains('open') || !tab?.classList.contains('active')) {
+    return;
+  }
+
+  try {
+    await renderTabDocs(_emp);
+    refreshPanelHeader();
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function renderTabDocs(emp) {
@@ -206,6 +230,7 @@ export async function renderTabDocs(emp) {
           const result = await deleteDocument(docId);
           await renderTabDocs(emp);
           refreshPanelHeader();
+          renderTrashPage().catch(() => {});
           showToast('Moved to Trash.', 'info', {
             actionLabel: 'Undo',
             duration: 8000,
@@ -215,6 +240,7 @@ export async function renderTabDocs(emp) {
                 showToast('Document restored.', 'success');
                 await renderTabDocs(emp);
                 refreshPanelHeader();
+                renderTrashPage().catch(() => {});
               } catch (err) {
                 showToast(err.message || 'Restore failed.', 'error');
               }

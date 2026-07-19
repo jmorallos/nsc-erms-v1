@@ -45,14 +45,17 @@ export function getSourceTag(source) {
 export function getAvatarHTML(employee, size = 32, fontSize = 11) {
   const first = employee.firstName ?? employee.fname ?? '';
   const last = employee.lastName ?? employee.lname ?? '';
+  const initials = escapeHtml(getInitials(first, last));
+  const boxStyle = `width:${size}px;height:${size}px;font-size:${fontSize / 14}rem;`;
   const src = employee.photoUrl
     || (employee.profilePicturePath
       ? `/api/v1/employees/${employee.id}/photo`
       : employee.picture);
   if (src) {
-    return `<img src="${escapeHtml(src)}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex-shrink:0;" alt=""/>`;
+    const fallback = `<div class="avatar" style="${boxStyle}">${initials}</div>`;
+    return `<img src="${escapeHtml(src)}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex-shrink:0;" alt="" onerror="this.onerror=null;this.outerHTML=${JSON.stringify(fallback)};"/>`;
   }
-  return `<div class="avatar" style="width:${size}px;height:${size}px;font-size:${fontSize / 14}rem;">${escapeHtml(getInitials(first, last))}</div>`;
+  return `<div class="avatar" style="${boxStyle}">${initials}</div>`;
 }
 export function setHTML(elementId, html) {
   const el = document.getElementById(elementId);
