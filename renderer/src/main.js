@@ -33,6 +33,16 @@ import { initSettings, renderSettingsPage } from './js/components/settings.js';
 import { initExport } from './js/components/export.js';
 import { setCurrentRole, clearCurrentRole } from './js/utils/authz.js';
 
+const FONT_SIZES = [13, 14, 17, 21];
+
+function normalizeFontSize(size) {
+  const n = Number(size);
+  if (FONT_SIZES.includes(n)) return n;
+  return FONT_SIZES.reduce((best, s) =>
+    Math.abs(s - n) < Math.abs(best - n) ? s : best,
+  );
+}
+
 const App = {
   currentUser: null,
   setupCompleted: false,
@@ -47,6 +57,7 @@ const App = {
         localStorage.getItem('nsc_erms_prefs') ||
         localStorage.getItem('edurecords_prefs');
       if (s) App.prefs = { ...App.prefs, ...JSON.parse(s) };
+      App.prefs.fontSize = normalizeFontSize(App.prefs.fontSize);
     } catch { /* ignore */ }
   },
   applyPrefs() {
