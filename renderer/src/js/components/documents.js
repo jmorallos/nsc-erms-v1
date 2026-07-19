@@ -125,7 +125,7 @@ export async function renderTabDocs(emp) {
 
     const checklistHtml = recommended.length
       ? `<div class="doc-checklist" style="margin-bottom:14px;">
-          <div style="font-size:12px;color:var(--text-2);margin-bottom:8px;">
+          <div style="font-size:0.8571rem;color:var(--text-2);margin-bottom:8px;">
             Recommended docs: ${onFile}/${recommended.length} on file
             ${stillRecommended
               ? `<span style="color:var(--blue-700);"> · ${stillRecommended} recommended</span>`
@@ -161,7 +161,7 @@ export async function renderTabDocs(emp) {
       `
       ${checklistHtml}
       ${uploadToolbar}
-      <p style="font-size:12px;color:var(--text-3);margin-bottom:12px;">
+      <p style="font-size:0.8571rem;color:var(--text-3);margin-bottom:12px;">
         ${documents.length} file(s) · sorted by most recent · multiple versions allowed per type
         ${canWrite() ? ' · drag & drop files here to upload' : ''}
       </p>
@@ -484,8 +484,8 @@ function buildDocRow(doc) {
       <div class="doc-info">
         <div class="doc-name">
           ${escapeHtml(doc.fileName)}
-          <span style="font-size:10px;background:var(--bg-subtle);color:var(--blue-700);padding:1px 7px;border-radius:99px;font-weight:700;margin-left:5px;">v${doc.versionNumber}</span>
-          <span style="font-size:10px;background:#eef2ff;color:#3730a3;padding:1px 7px;border-radius:99px;font-weight:700;margin-left:4px;">${escapeHtml(doc.documentTypeName)}</span>
+          <span style="font-size:0.7143rem;background:var(--bg-subtle);color:var(--blue-700);padding:1px 7px;border-radius:99px;font-weight:700;margin-left:5px;">v${doc.versionNumber}</span>
+          <span style="font-size:0.7143rem;background:#eef2ff;color:#3730a3;padding:1px 7px;border-radius:99px;font-weight:700;margin-left:4px;">${escapeHtml(doc.documentTypeName)}</span>
         </div>
         <div class="doc-meta">${escapeHtml(size)} · ${escapeHtml(when)}${dates ? ` · ${escapeHtml(dates)}` : ''}${doc.remarks ? ` · ${escapeHtml(doc.remarks)}` : ''}</div>
       </div>

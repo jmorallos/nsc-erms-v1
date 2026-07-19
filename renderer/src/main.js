@@ -53,9 +53,8 @@ const App = {
     document.body.classList.toggle('dark', App.prefs.darkMode);
     document.getElementById('dark-toggle')?.classList.toggle('on', App.prefs.darkMode);
     document.documentElement.style.setProperty('--fs', App.prefs.fontSize + 'px');
-    const sizes = [13, 14, 15, 16];
-    document.querySelectorAll('.fs-btn').forEach((btn, i) =>
-      btn.classList.toggle('active', sizes[i] === App.prefs.fontSize),
+    document.querySelectorAll('.fs-btn').forEach((btn) =>
+      btn.classList.toggle('active', Number(btn.dataset.size) === App.prefs.fontSize),
     );
   },
 };

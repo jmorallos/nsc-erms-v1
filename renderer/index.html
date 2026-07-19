@@ -266,7 +266,7 @@
                         <input type="search" id="pos-filter" class="dept-filter-input"
                             placeholder="Search positions…" autocomplete="off" />
                     </div>
-                    <p style="font-size:12px;color:var(--text-3);margin:-4px 0 14px;">
+                    <p style="font-size:0.8571rem;color:var(--text-3);margin:-4px 0 14px;">
                         Shared catalog of job titles. Link them to departments from the Departments page.
                     </p>
                     <div class="dept-grid" id="pos-grid"></div>
@@ -276,10 +276,10 @@
                 <div id="page-scan-inbox" class="page">
                     <div class="toolbar" style="justify-content:space-between;align-items:flex-start;">
                         <div>
-                            <p style="font-size:13px;color:var(--text-2);margin:0 0 4px;">
+                            <p style="font-size:0.9286rem;color:var(--text-2);margin:0 0 4px;">
                                 Files dropped here (or sent by Epson scan-to-folder) wait for assignment to an employee 201 File.
                             </p>
-                            <p style="font-size:11px;color:var(--text-3);margin:0;font-family:'DM Mono',monospace;" id="scan-inbox-path">—</p>
+                            <p style="font-size:0.7857rem;color:var(--text-3);margin:0;font-family:'DM Mono',monospace;" id="scan-inbox-path">—</p>
                         </div>
                         <button type="button" id="scan-inbox-refresh" class="btn btn-sm btn-edit">Refresh</button>
                     </div>
@@ -292,7 +292,7 @@
                 <div id="page-trash" class="page">
                     <div class="toolbar" style="justify-content:space-between;align-items:flex-start;">
                         <div>
-                            <p style="font-size:13px;color:var(--text-2);margin:0 0 4px;">
+                            <p style="font-size:0.9286rem;color:var(--text-2);margin:0 0 4px;">
                                 Soft-deleted 201 File documents. Restore to put them back, or delete forever to remove the file from disk.
                             </p>
                         </div>
@@ -324,14 +324,14 @@
                                 Snapshot PostgreSQL (<code>pg_dump</code>) and a copy of <code>FILES_ROOT</code>
                                 into a zip stored on the server.
                             </p>
-                            <p style="font-size:11px;color:var(--text-3);margin:0 0 12px;font-family:'DM Mono',monospace;"
+                            <p style="font-size:0.7857rem;color:var(--text-3);margin:0 0 12px;font-family:'DM Mono',monospace;"
                                 id="backup-root-path">—</p>
                             <button id="create-backup-btn" class="btn btn-primary"
                                 style="width:100%;justify-content:center;" type="button">
                                 Create Backup Now
                             </button>
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;">
-                                <h4 style="margin:0;font-size:13px;">Saved backups</h4>
+                                <h4 style="margin:0;font-size:0.9286rem;">Saved backups</h4>
                                 <button type="button" id="backup-refresh" class="btn btn-sm btn-edit">Refresh</button>
                             </div>
                             <div class="bk-list" id="bk-list"></div>
@@ -350,7 +350,7 @@
                                 In-app restore is disabled on purpose — restoring overwrites live data.
                                 Use a maintenance window and the steps in each archive’s <code>README.txt</code>:
                             </p>
-                            <ol style="font-size:12px;color:var(--text-2);margin:0;padding-left:18px;line-height:1.6;">
+                            <ol style="font-size:0.8571rem;color:var(--text-2);margin:0;padding-left:18px;line-height:1.6;">
                                 <li>Stop the NSC-ERMS API</li>
                                 <li>Restore <code>database.sql</code> with <code>psql</code></li>
                                 <li>Replace <code>FILES_ROOT</code> with the archive’s <code>files/</code> folder</li>
@@ -362,7 +362,7 @@
 
                 <!-- Export Page -->
                 <div id="page-export" class="page">
-                    <p style="font-size:13px;color:var(--text-2);margin-bottom:22px;">Export all employee records to
+                    <p style="font-size:0.9286rem;color:var(--text-2);margin-bottom:22px;">Export all employee records to
                         your preferred format.</p>
                     <div class="export-grid">
                         <div id="export-csv-btn" class="export-card">
@@ -397,7 +397,7 @@
                             <p>Opens print dialog · choose “Save as PDF”</p>
                         </div>
                     </div>
-                    <p style="font-size:12px;color:var(--text-3);margin-top:16px;max-width:640px;">
+                    <p style="font-size:0.8571rem;color:var(--text-3);margin-top:16px;max-width:640px;">
                         <strong>PDF tip:</strong> Use <em>Print / Save as PDF</em> and pick “Microsoft Print to PDF” or
                         “Save as PDF” in the dialog. Or download the HTML report, open it in your browser, then
                         Ctrl+P → Save as PDF.
@@ -448,7 +448,7 @@
                                     <div class="sl-title">Version</div>
                                 </div>
                                 <span
-                                    style="font-size:12px;font-weight:700;color:var(--blue-700);font-family:'DM Mono',monospace;">v1.0.0</span>
+                                    style="font-size:0.8571rem;font-weight:700;color:var(--blue-700);font-family:'DM Mono',monospace;">v1.0.0</span>
                             </div>
                             <div class="setting-row">
                                 <div class="sl">
@@ -566,7 +566,7 @@
             <div class="fg" style="margin-bottom:14px;"><label>Description</label><textarea id="d-desc"></textarea></div>
             <div class="fg" style="margin-bottom:8px;">
                 <label>Positions for this department</label>
-                <p style="font-size:11px;color:var(--text-3);margin:4px 0 8px;">
+                <p style="font-size:0.7857rem;color:var(--text-3);margin:4px 0 8px;">
                     Check positions staff can hold here. Create a new catalog position below if it’s missing.
                 </p>
                 <div id="d-pos-list" class="dept-pos-checklist"></div>
@@ -629,7 +629,7 @@
         <div class="modal" style="width:400px;">
             <button id="close-reset-pw-modal" class="modal-close" type="button">×</button>
             <h3>Reset password</h3>
-            <p style="font-size:12px;color:var(--text-2);margin:-8px 0 14px;">
+            <p style="font-size:0.8571rem;color:var(--text-2);margin:-8px 0 14px;">
                 Set a new password for inactive user
                 <strong id="reset-pw-user-label">—</strong>. They must change it on first login after activation.
             </p>
@@ -657,7 +657,7 @@
         <div class="modal" style="width:520px;">
             <button id="close-scan-assign-modal" class="modal-close" type="button">×</button>
             <h3>Assign scanned file</h3>
-            <p style="font-size:12px;color:var(--text-2);margin:-8px 0 14px;">
+            <p style="font-size:0.8571rem;color:var(--text-2);margin:-8px 0 14px;">
                 File: <strong id="scan-assign-file">—</strong>
             </p>
             <div class="fg" style="margin-bottom:13px;">
@@ -699,13 +699,13 @@
         <div class="modal" style="width:520px;">
             <button id="close-doc-modal" class="modal-close" type="button">×</button>
             <h3>Upload document</h3>
-            <p style="font-size:12px;color:var(--text-2);margin:-8px 0 16px;">
+            <p style="font-size:0.8571rem;color:var(--text-2);margin:-8px 0 16px;">
                 Each upload creates a new version. Rename and add details before saving.
             </p>
             <div class="fg" style="margin-bottom:13px;">
                 <label>File *</label>
                 <input type="file" id="doc-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
-                <div id="doc-file-meta" style="font-size:11px;color:var(--text-3);margin-top:6px;"></div>
+                <div id="doc-file-meta" style="font-size:0.7857rem;color:var(--text-3);margin-top:6px;"></div>
             </div>
             <div class="fg" style="margin-bottom:13px;">
                 <label>Display name *</label>
@@ -742,14 +742,14 @@
         <div class="modal" style="width:520px;">
             <button id="close-doc-inbox-modal" class="modal-close" type="button">×</button>
             <h3>Attach from Scan Inbox</h3>
-            <p style="font-size:12px;color:var(--text-2);margin:-8px 0 14px;">
+            <p style="font-size:0.8571rem;color:var(--text-2);margin:-8px 0 14px;">
                 Assign a pending scanned file to
                 <strong id="doc-inbox-employee-name">this employee</strong>’s 201 File.
             </p>
             <div class="fg" style="margin-bottom:13px;">
                 <label>Inbox file *</label>
                 <select id="doc-inbox-file"></select>
-                <div id="doc-inbox-file-meta" style="font-size:11px;color:var(--text-3);margin-top:6px;"></div>
+                <div id="doc-inbox-file-meta" style="font-size:0.7857rem;color:var(--text-3);margin-top:6px;"></div>
             </div>
             <div class="fg" style="margin-bottom:13px;">
                 <label>Display name *</label>
@@ -785,7 +785,7 @@
     <div id="pw-overlay" class="overlay">
         <div class="modal" style="width:420px;">
             <h3>Change password</h3>
-            <p id="pw-forced-note" style="font-size:12px;color:var(--text-2);margin:-8px 0 14px;">
+            <p id="pw-forced-note" style="font-size:0.8571rem;color:var(--text-2);margin:-8px 0 14px;">
                 You must set a new password before continuing.
             </p>
             <div class="fg" style="margin-bottom:13px;">

@@ -60,9 +60,13 @@ body.dark {
     --shadow-lg: 0 12px 40px rgba(0, 0, 0, .5);
 }
 
+html {
+    font-size: var(--fs);
+}
+
 body {
     font-family: 'DM Sans', system-ui, sans-serif;
-    font-size: var(--fs);
+    font-size: 1rem;
     background: var(--bg-base);
     color: var(--text-1);
     height: 100vh;
@@ -142,14 +146,14 @@ body {
 }
 
 .brand-text h1 {
-    font-size: 14px;
+    font-size: 1rem;
     font-weight: 800;
     color: var(--blue-900);
     letter-spacing: -.3px;
 }
 
 .brand-text p {
-    font-size: 10px;
+    font-size: 0.7143rem;
     color: var(--text-3);
     margin-top: 1px;
     font-weight: 500;
@@ -168,7 +172,7 @@ body {
 }
 
 .nav-section-label {
-    font-size: 9.5px;
+    font-size: 0.6786rem;
     font-weight: 700;
     letter-spacing: .8px;
     text-transform: uppercase;
@@ -182,7 +186,7 @@ body {
     gap: 10px;
     padding: 9px 12px;
     border-radius: 9px;
-    font-size: 13px;
+    font-size: 0.9286rem;
     font-weight: 500;
     color: var(--text-2);
     cursor: pointer;
@@ -222,7 +226,7 @@ body.dark #sidebar nav a.active {
     margin-left: auto;
     background: var(--cyan-500);
     color: #fff;
-    font-size: 10px;
+    font-size: 0.7143rem;
     font-weight: 700;
     padding: 1px 7px;
     border-radius: 99px;
@@ -249,7 +253,7 @@ body.dark #sidebar nav a.active {
     border-radius: 50%;
     background: linear-gradient(135deg, var(--blue-900), var(--cyan-500));
     color: #fff;
-    font-size: 11px;
+    font-size: 0.7857rem;
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -264,7 +268,7 @@ body.dark #sidebar nav a.active {
 }
 
 .su-name {
-    font-size: 12px;
+    font-size: 0.8571rem;
     font-weight: 700;
     color: var(--text-1);
     overflow: hidden;
@@ -273,7 +277,7 @@ body.dark #sidebar nav a.active {
 }
 
 .su-role {
-    font-size: 10px;
+    font-size: 0.7143rem;
     color: var(--text-3);
     font-weight: 500;
 }
@@ -319,7 +323,7 @@ body.dark .su-logout:hover {
 }
 
 #topbar h2 {
-    font-size: 17px;
+    font-size: 1.2143rem;
     font-weight: 800;
     color: var(--text-1);
     flex: 1;
@@ -341,7 +345,7 @@ body.dark .su-logout:hover {
     padding: 8px 13px 8px 36px;
     border: 1.5px solid var(--border);
     border-radius: 9px;
-    font-size: 13px;
+    font-size: 0.9286rem;
     width: 240px;
     background: var(--bg-base);
     color: var(--text-1);
@@ -406,7 +410,7 @@ body.dark .su-logout:hover {
 table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: 0.9286rem;
 }
 
 table thead tr {
@@ -422,7 +426,7 @@ table thead th {
     color: #fff;
     text-align: left;
     font-weight: 600;
-    font-size: 11.5px;
+    font-size: 0.8214rem;
     white-space: nowrap;
     letter-spacing: .3px;
     text-transform: uppercase;
@@ -447,7 +451,7 @@ table thead th .sort-marker {
     display: inline-block;
     min-width: 0.85em;
     margin-left: 4px;
-    font-size: 9px;
+    font-size: 0.6429rem;
     opacity: 0.85;
     vertical-align: middle;
 }
@@ -481,7 +485,7 @@ table tbody tr:last-child {
     gap: 5px;
     padding: 3px 10px;
     border-radius: 99px;
-    font-size: 11px;
+    font-size: 0.7857rem;
     font-weight: 600;
 }
 
@@ -539,7 +543,7 @@ body.dark .badge.leave {
 .btn {
     padding: 8px 18px;
     border-radius: 9px;
-    font-size: 13px;
+    font-size: 0.9286rem;
     cursor: pointer;
     border: none;
     font-weight: 600;
@@ -581,7 +585,7 @@ body.dark .btn-primary {
 
 .btn-sm {
     padding: 4px 12px;
-    font-size: 11.5px;
+    font-size: 0.8214rem;
     border-radius: 7px;
     cursor: pointer;
     border: none;
@@ -634,7 +638,7 @@ body.dark .btn-del {
     padding: 8px 12px;
     border: 1.5px solid var(--border);
     border-radius: 9px;
-    font-size: 13px;
+    font-size: 0.9286rem;
     font-family: inherit;
     background: var(--bg-surface);
     color: var(--text-1);
@@ -700,7 +704,7 @@ body.dark .btn-del {
 }
 
 .modal h3 {
-    font-size: 17px;
+    font-size: 1.2143rem;
     font-weight: 800;
     color: var(--text-1);
     margin-bottom: 20px;
@@ -713,7 +717,7 @@ body.dark .btn-del {
     right: 18px;
     background: var(--bg-base);
     border: 1.5px solid var(--border);
-    font-size: 18px;
+    font-size: 1.2857rem;
     cursor: pointer;
     color: var(--text-2);
     width: 30px;
@@ -748,7 +752,7 @@ body.dark .btn-del {
 }
 
 .fg label {
-    font-size: 10.5px;
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--text-2);
@@ -761,7 +765,7 @@ body.dark .btn-del {
     padding: 9px 12px;
     border: 1.5px solid var(--border);
     border-radius: 9px;
-    font-size: 13px;
+    font-size: 0.9286rem;
     font-family: inherit;
     background: var(--bg-base);
     color: var(--text-1);
@@ -858,7 +862,7 @@ body.dark .panel-hdr {
     width: 30px;
     height: 30px;
     border-radius: 8px;
-    font-size: 18px;
+    font-size: 1.2857rem;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -887,7 +891,7 @@ body.dark .panel-hdr {
     border: 3px solid rgba(255, 255, 255, .4);
     background: rgba(255, 255, 255, .15);
     color: #fff;
-    font-size: 26px;
+    font-size: 1.8571rem;
     font-weight: 800;
     display: flex;
     align-items: center;
@@ -897,13 +901,13 @@ body.dark .panel-hdr {
 }
 
 .panel-hdr h2 {
-    font-size: 21px;
+    font-size: 1.5rem;
     font-weight: 800;
     letter-spacing: -.4px;
 }
 
 .ph-pos {
-    font-size: 13px;
+    font-size: 0.9286rem;
     opacity: .8;
     margin-top: 3px;
     font-weight: 400;
@@ -919,7 +923,7 @@ body.dark .panel-hdr {
 .ph-badge {
     padding: 3px 11px;
     border-radius: 99px;
-    font-size: 11px;
+    font-size: 0.7857rem;
     font-weight: 600;
     background: rgba(255, 255, 255, .15);
     color: #fff;
@@ -935,7 +939,7 @@ body.dark .panel-hdr {
 .phbtn {
     padding: 8px 18px;
     border-radius: 9px;
-    font-size: 12px;
+    font-size: 0.8571rem;
     font-weight: 700;
     cursor: pointer;
     border: none;
@@ -969,7 +973,7 @@ body.dark .panel-hdr {
 
 .tab-btn {
     padding: 12px 18px;
-    font-size: 13px;
+    font-size: 0.9286rem;
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
@@ -1001,7 +1005,7 @@ body.dark .panel-hdr {
 }
 
 .info-section h4 {
-    font-size: 10px;
+    font-size: 0.7143rem;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--text-3);
@@ -1024,7 +1028,7 @@ body.dark .panel-hdr {
 }
 
 .ir-label {
-    font-size: 12px;
+    font-size: 0.8571rem;
     color: var(--text-3);
     min-width: 140px;
     flex-shrink: 0;
@@ -1032,7 +1036,7 @@ body.dark .panel-hdr {
 }
 
 .ir-val {
-    font-size: 13px;
+    font-size: 0.9286rem;
     font-weight: 500;
     color: var(--text-1);
 }
@@ -1051,7 +1055,7 @@ body.dark .panel-hdr {
     gap: 7px;
     padding: 7px 14px;
     border-radius: 9px;
-    font-size: 12px;
+    font-size: 0.8571rem;
     font-weight: 600;
     cursor: pointer;
     border: none;
@@ -1132,7 +1136,7 @@ body.dark .fab-sample {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
+    font-size: 0.9286rem;
     font-weight: 600;
     color: var(--blue-700);
     background: rgba(255, 255, 255, 0.75);
@@ -1214,7 +1218,7 @@ body.dark .di-scan {
 }
 
 .doc-name {
-    font-size: 13px;
+    font-size: 0.9286rem;
     font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1223,7 +1227,7 @@ body.dark .di-scan {
 }
 
 .doc-meta {
-    font-size: 11px;
+    font-size: 0.7857rem;
     color: var(--text-3);
     margin-top: 2px;
 }
@@ -1237,7 +1241,7 @@ body.dark .di-scan {
 .dbtn {
     padding: 4px 10px;
     border-radius: 6px;
-    font-size: 11px;
+    font-size: 0.7857rem;
     cursor: pointer;
     font-weight: 600;
     border: none;
@@ -1306,7 +1310,7 @@ body.dark .dbtn-del {
 }
 
 .scan-opts label {
-    font-size: 10.5px;
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--text-2);
@@ -1320,7 +1324,7 @@ body.dark .dbtn-del {
     padding: 8px 10px;
     border: 1.5px solid var(--border);
     border-radius: 8px;
-    font-size: 12px;
+    font-size: 0.8571rem;
     font-family: inherit;
     background: var(--bg-base);
     color: var(--text-1);
@@ -1353,7 +1357,7 @@ body.dark .dbtn-del {
     min-width: 200px;
     max-width: 280px;
     flex: 1;
-    font-size: 13px;
+    font-size: 0.9286rem;
     padding: 8px 12px;
     border-radius: 8px;
     border: 1px solid var(--border);
@@ -1404,7 +1408,7 @@ body.dark .dbtn-del {
     border-radius: 11px;
     background: linear-gradient(135deg, var(--blue-900), var(--blue-700));
     color: #fff;
-    font-size: 16px;
+    font-size: 1.1429rem;
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -1423,7 +1427,7 @@ body.dark .dept-card-initial {
 }
 
 .dept-card h4 {
-    font-size: 14px;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--text-1);
     letter-spacing: -.2px;
@@ -1432,7 +1436,7 @@ body.dark .dept-card-initial {
 }
 
 .dept-meta {
-    font-size: 12px;
+    font-size: 0.8571rem;
     color: var(--text-3);
     display: flex;
     flex-wrap: wrap;
@@ -1459,7 +1463,7 @@ body.dark .dept-emp-count {
 }
 
 .dept-card .dsub {
-    font-size: 12px;
+    font-size: 0.8571rem;
     color: var(--text-3);
     margin: 0 0 10px;
     line-height: 1.45;
@@ -1478,7 +1482,7 @@ body.dark .dept-emp-count {
 }
 
 .dept-pos-chip {
-    font-size: 10px;
+    font-size: 0.7143rem;
     font-weight: 700;
     color: var(--blue-700);
     background: var(--bg-hover);
@@ -1492,7 +1496,7 @@ body.dark .dept-pos-chip {
 }
 
 .dept-pos-more {
-    font-size: 10px;
+    font-size: 0.7143rem;
     font-weight: 700;
     color: var(--text-3);
     padding: 2px 6px;
@@ -1504,7 +1508,7 @@ body.dark .dept-pos-chip {
     border: none;
     background: transparent;
     color: var(--blue-700);
-    font-size: 12px;
+    font-size: 0.8571rem;
     font-weight: 700;
     cursor: pointer;
     padding: 0;
@@ -1524,7 +1528,7 @@ body.dark .dept-link-pos {
 }
 
 .dept-pos-empty {
-    font-size: 11px;
+    font-size: 0.7857rem;
     color: var(--text-3);
 }
 
@@ -1542,7 +1546,7 @@ body.dark .dept-link-pos {
     align-items: center;
     gap: 8px;
     padding: 6px 4px;
-    font-size: 13px;
+    font-size: 0.9286rem;
     color: var(--text-1);
     cursor: pointer;
 }
@@ -1568,7 +1572,7 @@ body.dark .dept-link-pos {
 .dept-pos-rename-input {
     flex: 1;
     min-width: 0;
-    font-size: 13px;
+    font-size: 0.9286rem;
     padding: 4px 8px;
     border-radius: 6px;
     border: 1px solid var(--border-strong);
@@ -1584,7 +1588,7 @@ body.dark .dept-link-pos {
 
 .dept-pos-add input {
     flex: 1;
-    font-size: 13px;
+    font-size: 0.9286rem;
     padding: 7px 10px;
     border-radius: 8px;
     border: 1px solid var(--border);
@@ -1608,7 +1612,7 @@ body.dark .dept-link-pos {
 }
 
 .backup-card h4 {
-    font-size: 14px;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--text-1);
     margin-bottom: 8px;
@@ -1619,7 +1623,7 @@ body.dark .dept-link-pos {
 }
 
 .backup-card p {
-    font-size: 12px;
+    font-size: 0.8571rem;
     color: var(--text-2);
     margin-bottom: 16px;
     line-height: 1.7;
@@ -1648,14 +1652,14 @@ body.dark .dept-link-pos {
 }
 
 .bk-name {
-    font-size: 12.5px;
+    font-size: 0.8929rem;
     font-weight: 600;
     color: var(--text-1);
     font-family: 'DM Mono', monospace;
 }
 
 .bk-meta {
-    font-size: 11px;
+    font-size: 0.7857rem;
     color: var(--text-3);
     margin-top: 2px;
 }
@@ -1699,7 +1703,7 @@ body.dark .dept-link-pos {
 }
 
 .settings-card h4 {
-    font-size: 11px;
+    font-size: 0.7857rem;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--blue-700);
@@ -1726,13 +1730,13 @@ body.dark .dept-link-pos {
 }
 
 .sl-title {
-    font-size: 13px;
+    font-size: 0.9286rem;
     font-weight: 600;
     color: var(--text-1);
 }
 
 .sl-desc {
-    font-size: 11px;
+    font-size: 0.7857rem;
     color: var(--text-3);
     margin-top: 2px;
 }
@@ -1779,7 +1783,7 @@ body.dark .dept-link-pos {
     padding: 5px 13px;
     border: 1.5px solid var(--border);
     border-radius: 8px;
-    font-size: 12px;
+    font-size: 0.8571rem;
     font-weight: 600;
     cursor: pointer;
     font-family: inherit;
@@ -1798,13 +1802,13 @@ body.dark .dept-link-pos {
 .user-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: 0.9286rem;
     margin-top: 4px;
 }
 
 .user-table th {
     text-align: left;
-    font-size: 10.5px;
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--text-3);
@@ -1845,12 +1849,12 @@ body.dark .dept-link-pos {
 }
 
 .assign-history-main {
-    font-size: 13px;
+    font-size: 0.9286rem;
     margin-bottom: 4px;
 }
 
 .assign-history-meta {
-    font-size: 11.5px;
+    font-size: 0.8214rem;
     color: var(--text-3);
 }
 
@@ -1878,14 +1882,14 @@ body.dark .dept-link-pos {
 }
 
 .export-card h4 {
-    font-size: 14px;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--text-1);
     letter-spacing: -.2px;
 }
 
 .export-card p {
-    font-size: 12px;
+    font-size: 0.8571rem;
     color: var(--text-3);
     margin-top: 5px;
 }
@@ -1990,7 +1994,7 @@ body.dark .login-box {
 }
 
 .login-box h1 {
-    font-size: 24px;
+    font-size: 1.7143rem;
     font-weight: 800;
     color: var(--text-1);
     margin-bottom: 4px;
@@ -1998,7 +2002,7 @@ body.dark .login-box {
 }
 
 .login-box>p {
-    font-size: 12.5px;
+    font-size: 0.8929rem;
     color: var(--text-3);
     margin-bottom: 28px;
     font-weight: 400;
@@ -2010,7 +2014,7 @@ body.dark .login-box {
 }
 
 .login-field label {
-    font-size: 10.5px;
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--text-2);
@@ -2024,7 +2028,7 @@ body.dark .login-box {
     padding: 11px 14px;
     border: 1.5px solid var(--border);
     border-radius: 10px;
-    font-size: 14px;
+    font-size: 1rem;
     font-family: inherit;
     background: var(--bg-base);
     color: var(--text-1);
@@ -2038,7 +2042,7 @@ body.dark .login-box {
 }
 
 .login-err {
-    font-size: 12px;
+    font-size: 0.8571rem;
     color: var(--error);
     margin-bottom: 10px;
     min-height: 18px;
@@ -2052,7 +2056,7 @@ body.dark .login-box {
     color: #fff;
     border: none;
     border-radius: 11px;
-    font-size: 14px;
+    font-size: 1rem;
     font-weight: 700;
     font-family: inherit;
     cursor: pointer;
@@ -2068,7 +2072,7 @@ body.dark .login-box {
 
 .login-footer {
     margin-top: 22px;
-    font-size: 11px;
+    font-size: 0.7857rem;
     color: var(--text-3);
 }
 
@@ -2108,7 +2112,7 @@ body.dark .avatar {
     border: 2.5px solid var(--blue-500);
     background: var(--bg-hover);
     color: var(--blue-700);
-    font-size: 24px;
+    font-size: 1.7143rem;
     font-weight: 800;
     display: flex;
     align-items: center;
@@ -2116,7 +2120,7 @@ body.dark .avatar {
 }
 
 .pic-lbl {
-    font-size: 11.5px;
+    font-size: 0.8214rem;
     cursor: pointer;
     background: var(--bg-hover);
     color: var(--blue-700);
@@ -2136,13 +2140,13 @@ body.dark .avatar {
     text-align: center;
     padding: 52px 0;
     color: var(--text-3);
-    font-size: 13px;
+    font-size: 0.9286rem;
 }
 
 .empty::before {
     content: '⟨  ⟩';
     display: block;
-    font-size: 28px;
+    font-size: 2rem;
     margin-bottom: 10px;
     opacity: .3;
     font-family: 'DM Mono', monospace;
@@ -2155,7 +2159,7 @@ body.dark .avatar {
     right: 26px;
     padding: 12px 20px;
     border-radius: 11px;
-    font-size: 13px;
+    font-size: 0.9286rem;
     font-weight: 600;
     z-index: 9999;
     opacity: 0;
@@ -2252,7 +2256,7 @@ body:not(.dark) #toast.t-info {
 }
 
 .pager-info {
-    font-size: 12px;
+    font-size: 0.8571rem;
     color: var(--text-3);
     font-family: 'DM Mono', monospace;
 }
@@ -2268,7 +2272,7 @@ body:not(.dark) #toast.t-info {
 .audit-toolbar select {
     flex: 1;
     min-width: 140px;
-    font-size: 13px;
+    font-size: 0.9286rem;
     padding: 7px 10px;
     border-radius: 8px;
     border: 1px solid var(--border);
@@ -2301,19 +2305,19 @@ body:not(.dark) #toast.t-info {
 }
 
 .audit-action {
-    font-size: 12px;
+    font-size: 0.8571rem;
     font-weight: 700;
     font-family: 'DM Mono', monospace;
     color: var(--blue-700);
 }
 
 .audit-who {
-    font-size: 12px;
+    font-size: 0.8571rem;
     color: var(--text-1);
 }
 
 .audit-meta {
-    font-size: 11px;
+    font-size: 0.7857rem;
     color: var(--text-3);
     margin-top: 4px;
 }

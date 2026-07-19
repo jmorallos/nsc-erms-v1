@@ -24,14 +24,14 @@ export async function renderBackupPage() {
     if (pathEl) pathEl.textContent = '—';
     setHTML(
       'bk-list',
-      `<p style="font-size:12px;color:var(--text-3);text-align:center;padding:16px 0;">
+      `<p style="font-size:0.8571rem;color:var(--text-3);text-align:center;padding:16px 0;">
         Only administrators can create or download backups.
       </p>`,
     );
     return;
   }
 
-  setHTML('bk-list', '<p style="font-size:12px;color:var(--text-3);padding:12px 0;">Loading backups…</p>');
+  setHTML('bk-list', '<p style="font-size:0.8571rem;color:var(--text-3);padding:12px 0;">Loading backups…</p>');
 
   try {
     const { backups, backupsRoot, busy } = await listBackups();
@@ -46,7 +46,7 @@ export async function renderBackupPage() {
     if (!backups.length) {
       setHTML(
         'bk-list',
-        `<p style="font-size:12px;color:var(--text-3);text-align:center;padding:16px 0;">
+        `<p style="font-size:0.8571rem;color:var(--text-3);text-align:center;padding:16px 0;">
           No backups yet. Create one to snapshot the database and FILES_ROOT.
         </p>`,
       );
@@ -93,7 +93,7 @@ export async function renderBackupPage() {
     showErr(err);
     setHTML(
       'bk-list',
-      `<p style="font-size:12px;color:var(--text-3);text-align:center;padding:16px 0;">
+      `<p style="font-size:0.8571rem;color:var(--text-3);text-align:center;padding:16px 0;">
         ${escapeHtml(err instanceof ApiError ? err.message : 'Unable to load backups')}
       </p>`,
     );

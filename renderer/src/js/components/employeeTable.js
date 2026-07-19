@@ -164,20 +164,20 @@ function buildEmployeeRow(emp, rowNumber) {
     : '—';
   return `
     <tr>
-      <td style="color:var(--text-3);font-size:12px;font-family:'DM Mono',monospace;">${String(rowNumber).padStart(2, '0')}</td>
+      <td style="color:var(--text-3);font-size:0.8571rem;font-family:'DM Mono',monospace;">${String(rowNumber).padStart(2, '0')}</td>
       <td style="cursor:pointer;" data-profile-trigger>
         <div style="display:flex;align-items:center;gap:10px;">
           ${getAvatarHTML(emp, 34, 12)}
           <div>
             <div style="font-weight:700;color:var(--blue-900);letter-spacing:-.2px;">${escapeHtml(emp.firstName)} ${escapeHtml(emp.lastName)}</div>
-            <div style="font-size:11px;color:var(--text-3);">${escapeHtml(emp.email)}</div>
+            <div style="font-size:0.7857rem;color:var(--text-3);">${escapeHtml(emp.email)}</div>
           </div>
         </div>
       </td>
-      <td style="color:var(--text-2);font-size:12.5px;">${escapeHtml(emp.contactNumber || '—')}</td>
+      <td style="color:var(--text-2);font-size:0.8929rem;">${escapeHtml(emp.contactNumber || '—')}</td>
       <td style="font-weight:500;">${escapeHtml(emp.assignment?.positionName || '—')}</td>
       <td style="color:var(--text-2);">${escapeHtml(emp.assignment?.departmentName || '—')}</td>
       <td>${getStatusBadge(status)}</td>
-      <td style="color:var(--text-2);font-size:12.5px;font-variant-numeric:tabular-nums;">${escapeHtml(startDate)}</td>
+      <td style="color:var(--text-2);font-size:0.8929rem;font-variant-numeric:tabular-nums;">${escapeHtml(startDate)}</td>
     </tr>`;
 }

@@ -57,7 +57,7 @@ export async function renderTrashPage() {
         'trash-list',
         `<div class="empty" style="padding:28px 0;text-align:center;">
           <p style="font-weight:600;margin-bottom:6px;">Trash is empty</p>
-          <p style="font-size:12px;color:var(--text-3);">Soft-deleted 201 File documents appear here. Restore or delete permanently.</p>
+          <p style="font-size:0.8571rem;color:var(--text-3);">Soft-deleted 201 File documents appear here. Restore or delete permanently.</p>
         </div>`,
       );
       return;
@@ -79,7 +79,7 @@ export async function renderTrashPage() {
         <div class="bk-item" style="align-items:flex-start;">
           <div style="flex:1;min-width:0;">
             <div class="bk-name">${escapeHtml(doc.fileName)}
-              <span style="font-size:10px;background:var(--bg-subtle);color:var(--blue-700);padding:1px 7px;border-radius:99px;font-weight:700;margin-left:5px;">v${doc.versionNumber}</span>
+              <span style="font-size:0.7143rem;background:var(--bg-subtle);color:var(--blue-700);padding:1px 7px;border-radius:99px;font-weight:700;margin-left:5px;">v${doc.versionNumber}</span>
             </div>
             <div class="bk-meta">
               ${escapeHtml(emp?.lastName || '')}, ${escapeHtml(emp?.firstName || '')} (${escapeHtml(emp?.employeeNo || '')})

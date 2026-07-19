@@ -275,7 +275,7 @@ async function renderUserTable() {
       setHTML(
         'user-table',
         `<tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th><th></th></tr>
-         <tr><td colspan="5" style="color:var(--text-3);font-size:12px;">No user accounts yet.</td></tr>`,
+         <tr><td colspan="5" style="color:var(--text-3);font-size:0.8571rem;">No user accounts yet.</td></tr>`,
       );
       return;
     }
@@ -289,8 +289,8 @@ async function renderUserTable() {
         const protectedRole = u.role.code === 'superadmin';
         const canModify = !protectedRole || isSuperadmin();
         const statusBadge = u.isActive
-          ? `<span class="badge active" style="font-size:10px;">Active</span>`
-          : `<span class="badge" style="font-size:10px;background:var(--bg-base);color:var(--text-3);">Inactive</span>`;
+          ? `<span class="badge active" style="font-size:0.7143rem;">Active</span>`
+          : `<span class="badge" style="font-size:0.7143rem;background:var(--bg-base);color:var(--text-3);">Inactive</span>`;
         let action = '';
         if (canModify) {
           if (u.isActive) {
@@ -307,13 +307,13 @@ async function renderUserTable() {
             </div>`;
           }
         } else {
-          action = `<span style="font-size:11px;color:var(--text-3);">Protected</span>`;
+          action = `<span style="font-size:0.7857rem;color:var(--text-3);">Protected</span>`;
         }
         return `
       <tr>
         <td>${escapeHtml(u.displayName || u.username)}</td>
-        <td><code style="background:var(--bg-base);padding:2px 8px;border-radius:6px;font-size:12px;font-family:'DM Mono',monospace;">${escapeHtml(u.username)}</code></td>
-        <td><span class="badge active" style="font-size:10px;">${escapeHtml(u.role.name)}</span></td>
+        <td><code style="background:var(--bg-base);padding:2px 8px;border-radius:6px;font-size:0.8571rem;font-family:'DM Mono',monospace;">${escapeHtml(u.username)}</code></td>
+        <td><span class="badge active" style="font-size:0.7143rem;">${escapeHtml(u.role.name)}</span></td>
         <td>${statusBadge}</td>
         <td>${action}</td>
       </tr>`;
@@ -367,7 +367,7 @@ async function renderUserTable() {
           : 'Unable to load users';
     setHTML(
       'user-table',
-      `<tr><td colspan="5" style="color:var(--text-3);font-size:12px;">${escapeHtml(msg)}</td></tr>`,
+      `<tr><td colspan="5" style="color:var(--text-3);font-size:0.8571rem;">${escapeHtml(msg)}</td></tr>`,
     );
   }
 }
@@ -415,12 +415,12 @@ async function renderAuditLogs() {
   if (!canManageUsers()) {
     setHTML(
       'audit-list',
-      `<p style="font-size:12px;color:var(--text-3);">Only administrators can view audit logs.</p>`,
+      `<p style="font-size:0.8571rem;color:var(--text-3);">Only administrators can view audit logs.</p>`,
     );
     return;
   }
 
-  setHTML('audit-list', `<p style="font-size:12px;color:var(--text-3);">Loading…</p>`);
+  setHTML('audit-list', `<p style="font-size:0.8571rem;color:var(--text-3);">Loading…</p>`);
 
   try {
     const q = getEl('audit-q')?.value.trim() || '';
@@ -448,7 +448,7 @@ async function renderAuditLogs() {
     if (!logs.length) {
       setHTML(
         'audit-list',
-        `<p style="font-size:12px;color:var(--text-3);padding:8px 0;">No matching audit entries.</p>`,
+        `<p style="font-size:0.8571rem;color:var(--text-3);padding:8px 0;">No matching audit entries.</p>`,
       );
       return;
     }
@@ -481,7 +481,7 @@ async function renderAuditLogs() {
   } catch (err) {
     setHTML(
       'audit-list',
-      `<p style="font-size:12px;color:var(--text-3);">${escapeHtml(err instanceof ApiError ? err.message : 'Unable to load audit logs')}</p>`,
+      `<p style="font-size:0.8571rem;color:var(--text-3);">${escapeHtml(err instanceof ApiError ? err.message : 'Unable to load audit logs')}</p>`,
     );
   }
 }

@@ -35,10 +35,10 @@ export function getStatusBadge(status) {
 }
 export function getSourceTag(source) {
   if (source === 'scan') {
-    return `<span style="font-size:10px;background:#ede9fe;color:#5b21b6;padding:1px 7px;border-radius:99px;font-weight:700;margin-left:5px;">SCANNED</span>`;
+    return `<span style="font-size:0.7143rem;background:#ede9fe;color:#5b21b6;padding:1px 7px;border-radius:99px;font-weight:700;margin-left:5px;">SCANNED</span>`;
   }
   if (source === 'sample') {
-    return `<span style="font-size:10px;background:#d1fae5;color:#065f46;padding:1px 7px;border-radius:99px;font-weight:700;margin-left:5px;">SAMPLE</span>`;
+    return `<span style="font-size:0.7143rem;background:#d1fae5;color:#065f46;padding:1px 7px;border-radius:99px;font-weight:700;margin-left:5px;">SAMPLE</span>`;
   }
   return '';
 }
@@ -52,7 +52,7 @@ export function getAvatarHTML(employee, size = 32, fontSize = 11) {
   if (src) {
     return `<img src="${escapeHtml(src)}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex-shrink:0;" alt=""/>`;
   }
-  return `<div class="avatar" style="width:${size}px;height:${size}px;font-size:${fontSize}px;">${escapeHtml(getInitials(first, last))}</div>`;
+  return `<div class="avatar" style="width:${size}px;height:${size}px;font-size:${fontSize / 14}rem;">${escapeHtml(getInitials(first, last))}</div>`;
 }
 export function setHTML(elementId, html) {
   const el = document.getElementById(elementId);

@@ -41,7 +41,7 @@ export async function renderScanInboxPage() {
         'scan-inbox-list',
         `<div class="empty" style="padding:28px 0;text-align:center;">
           <p style="font-weight:600;margin-bottom:8px;">Inbox is empty</p>
-          <p style="font-size:12px;color:var(--text-3);max-width:420px;margin:0 auto;">
+          <p style="font-size:0.8571rem;color:var(--text-3);max-width:420px;margin:0 auto;">
             Drop scanned PDFs/images into the inbox folder (or use Epson scan-to-folder when available).
             Then refresh and assign each file to an employee 201 File.
           </p>
@@ -67,7 +67,7 @@ export async function renderScanInboxPage() {
             ${canWrite()
               ? `<button class="btn btn-sm btn-edit" data-assign-scan="${encodeURIComponent(f.name)}" ${f.tooLarge ? 'disabled' : ''}>Assign</button>
             <button class="btn btn-sm btn-del" data-reject-scan="${encodeURIComponent(f.name)}">Reject</button>`
-              : '<span style="font-size:11px;color:var(--text-3);">View only</span>'}
+              : '<span style="font-size:0.7857rem;color:var(--text-3);">View only</span>'}
           </div>
         </div>`,
         )
