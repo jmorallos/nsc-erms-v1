@@ -1249,6 +1249,16 @@ body.dark .di-scan {
     transition: background .15s;
 }
 
+.dbtn-dl {
+    background: #eef2ff;
+    color: var(--blue-700);
+    border: 1px solid #c7d2fe;
+}
+
+.dbtn-dl:hover {
+    background: #e0e7ff;
+}
+
 .dbtn-print {
     background: #fff7ed;
     color: #92400e;
@@ -1267,6 +1277,12 @@ body.dark .di-scan {
 
 .dbtn-del:hover {
     background: #fad0d5;
+}
+
+body.dark .dbtn-dl {
+    background: #1a2340;
+    color: var(--blue-300);
+    border-color: #2d3f68;
 }
 
 body.dark .dbtn-print {
